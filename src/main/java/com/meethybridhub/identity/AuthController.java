@@ -1,6 +1,10 @@
 package com.meethybridhub.identity;
 
+import com.meethybridhub.identity.validation.ValidEmail;
+import com.meethybridhub.identity.validation.ValidPassword;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -133,26 +137,40 @@ public class AuthController {
     // Request/Response records (immutable DTOs)
 
     public record RegisterRequest(
+            @ValidEmail
             String email,
+            
+            @ValidPassword
             String password,
+            
+            @NotBlank(message = "Full name is required")
+            @Size(min = 2, max = 100, message = "Full name must be between 2 and 100 characters")
             String fullName
     ) {}
 
     public record LoginRequest(
+            @ValidEmail
             String email,
+            
+            @NotBlank(message = "Password is required")
             String password
     ) {}
 
     public record RefreshTokenRequest(
+            @NotBlank(message = "Refresh token is required")
             String refreshToken
     ) {}
 
     public record ResetPasswordRequest(
+            @ValidEmail
             String email
     ) {}
 
     public record ConfirmPasswordResetRequest(
+            @NotBlank(message = "Reset token is required")
             String token,
+            
+            @ValidPassword
             String newPassword
     ) {}
 
