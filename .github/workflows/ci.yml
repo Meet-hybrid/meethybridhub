@@ -1,0 +1,28 @@
+name: CI
+
+# Runs on every push to main and every pull request.
+# CI is the first line of defence: if this is red, the merge button is disabled.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    name: Build & Test (JDK 21)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      # ./mvnw (Maven Wrapper) is committed, so CI uses the exact same Maven
+      # version as every developer — no "works on my machine".
+      - name: Build & run tests
+        run: ./mvnw -B verify --no-transfer-progress

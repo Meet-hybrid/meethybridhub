@@ -1,0 +1,23 @@
+# ============================================================================
+# Test profile: an in-memory H2 database in PostgreSQL-compatibility mode.
+# Tests must never touch a developer's real database.
+#
+# LIMITATION (important): H2 emulates a subset of Postgres. When we reach
+# Postgres-only features (JSONB, partial indexes, enums), slice tests move to
+# Testcontainers so tests run against REAL Postgres in CI.
+# ============================================================================
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:meethybridhub;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+
+  jpa:
+    hibernate:
+      # No Flyway migrations exist yet, so let Hibernate build the (empty) schema.
+      ddl-auto: create-drop
+
+  flyway:
+    enabled: false
