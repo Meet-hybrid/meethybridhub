@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -98,11 +99,19 @@ public class UserService {
 
     /**
      * Request password reset for a user.
+     * For security, always returns success even if user doesn't exist.
      */
     public void requestPasswordReset(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
-
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        
+        if (userOptional.isEmpty()) {
+            // Security: don't reveal if user exists or not
+            log.debug("Password reset requested for non-existent email: {}", email);
+            return;
+        }
+        
+        User user = userOptional.get();
+        
         // TODO: Generate password reset token and send email
         // String resetToken = generateResetToken(user);
         // sendPasswordResetEmail(user, resetToken);

@@ -1,5 +1,6 @@
 package com.meethybridhub.identity;
 
+import com.meethybridhub.common.exception.UnauthorizedException;
 import com.meethybridhub.identity.validation.ValidEmail;
 import com.meethybridhub.identity.validation.ValidPassword;
 import jakarta.validation.Valid;
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -68,22 +70,27 @@ public class AuthController {
      */
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        // Authenticate with Spring Security
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.email(), request.password())
-        );
-        
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        
-        // Generate tokens
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        String accessToken = jwtService.generateAccessToken(userDetails);
-        String refreshToken = jwtService.generateRefreshToken(userDetails);
-        
-        // Update user's last login
-        userService.recordLogin(userDetails.getUsername());
+        try {
+            // Authenticate with Spring Security
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.email(), request.password())
+            );
+            
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            
+            // Generate tokens
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            String accessToken = jwtService.generateAccessToken(userDetails);
+            String refreshToken = jwtService.generateRefreshToken(userDetails);
+            
+            // Update user's last login
+            userService.recordLogin(userDetails.getUsername());
 
-        return ResponseEntity.ok(new AuthResponse(accessToken, refreshToken, "Login successful"));
+            return ResponseEntity.ok(new AuthResponse(accessToken, refreshToken, "Login successful"));
+        } catch (AuthenticationException e) {
+            // Convert Spring Security exceptions to our custom exception
+            throw new UnauthorizedException("Invalid email or password");
+        }
     }
 
     /**
@@ -91,20 +98,24 @@ public class AuthController {
      */
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponse> refresh(@RequestBody RefreshTokenRequest request) {
-        // Validate refresh token
-        String username = jwtService.extractUsername(request.refreshToken());
-        
-        if (!jwtService.validateToken(request.refreshToken(), userService.loadUserByUsername(username))) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new AuthResponse(null, null, "Invalid refresh token"));
+        try {
+            // Validate refresh token
+            String username = jwtService.extractUsername(request.refreshToken());
+            
+            if (!jwtService.validateToken(request.refreshToken(), userService.loadUserByUsername(username))) {
+                throw new UnauthorizedException("Invalid refresh token");
+            }
+
+            // Generate new tokens
+            UserDetails userDetails = userService.loadUserByUsername(username);
+            String newAccessToken = jwtService.generateAccessToken(userDetails);
+            String newRefreshToken = jwtService.generateRefreshToken(userDetails);
+
+            return ResponseEntity.ok(new AuthResponse(newAccessToken, newRefreshToken, "Token refreshed"));
+        } catch (Exception e) {
+            // Catch any JWT parsing errors
+            throw new UnauthorizedException("Invalid refresh token");
         }
-
-        // Generate new tokens
-        UserDetails userDetails = userService.loadUserByUsername(username);
-        String newAccessToken = jwtService.generateAccessToken(userDetails);
-        String newRefreshToken = jwtService.generateRefreshToken(userDetails);
-
-        return ResponseEntity.ok(new AuthResponse(newAccessToken, newRefreshToken, "Token refreshed"));
     }
 
     /**

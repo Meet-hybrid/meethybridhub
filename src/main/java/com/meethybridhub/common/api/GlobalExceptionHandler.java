@@ -1,12 +1,18 @@
 package com.meethybridhub.common.api;
 
 import com.meethybridhub.common.exception.BadRequestException;
+import com.meethybridhub.common.exception.ForbiddenException;
 import com.meethybridhub.common.exception.ResourceNotFoundException;
+import com.meethybridhub.common.exception.UnauthorizedException;
+import io.jsonwebtoken.MalformedJwtException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -29,6 +35,8 @@ import java.util.List;
  *
  *   404 — unknown resource, unknown URL
  *   400 — malformed body, failed bean validation, bad/missing parameters
+ *   401 — authentication failed
+ *   403 — authenticated but unauthorized
  *   405 — wrong HTTP method for a known URL
  *   500 — only the truly unexpected (full stack trace logged, never leaked)
  *
@@ -62,6 +70,42 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ApiError> handleBadRequest(BadRequestException ex) {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    /** 401 — authentication failed. */
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ApiError> handleUnauthorized(UnauthorizedException ex) {
+        return build(HttpStatus.UNAUTHORIZED, ex.getMessage());
+    }
+
+    /** 401 — Spring Security authentication failed (bad credentials). */
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ApiError> handleBadCredentials(BadCredentialsException ex) {
+        return build(HttpStatus.UNAUTHORIZED, "Invalid email or password");
+    }
+
+    /** 401 — User account is disabled/suspended. */
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<ApiError> handleDisabled(DisabledException ex) {
+        return build(HttpStatus.UNAUTHORIZED, "Account is disabled. Please verify your email or contact support.");
+    }
+
+    /** 401 — Generic Spring Security authentication exception. */
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiError> handleAuthentication(AuthenticationException ex) {
+        return build(HttpStatus.UNAUTHORIZED, "Authentication failed: " + ex.getMessage());
+    }
+
+    /** 401 — Malformed JWT token. */
+    @ExceptionHandler(MalformedJwtException.class)
+    public ResponseEntity<ApiError> handleMalformedJwt(MalformedJwtException ex) {
+        return build(HttpStatus.UNAUTHORIZED, "Invalid token");
+    }
+
+    /** 403 — authenticated but unauthorized. */
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ApiError> handleForbidden(ForbiddenException ex) {
+        return build(HttpStatus.FORBIDDEN, ex.getMessage());
     }
 
     /**
