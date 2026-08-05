@@ -328,6 +328,19 @@ public class UserService {
     }
 
     /**
+     * Verify that {@code password} matches the user's current password.
+     * Used before destructive actions such as account deletion.
+     *
+     * @throws BadRequestException if the password is incorrect
+     */
+    public void verifyPassword(Long userId, String password) {
+        User user = getUserById(userId);
+        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+            throw new BadRequestException("Current password is incorrect");
+        }
+    }
+
+    /**
      * Change user password.
      */
     public void changePassword(Long userId, String currentPassword, String newPassword) {

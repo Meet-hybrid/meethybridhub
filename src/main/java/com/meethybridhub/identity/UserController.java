@@ -85,23 +85,12 @@ public class UserController {
         
         User user = userService.getUserByEmail(userDetails.getUsername());
         
-        // Verify password before deletion
-        userService.changePassword(
-                user.getId(), 
-                request.password(), 
-                request.password() // Dummy call to verify password
-        );
-        
+        // Verify the password (without re-hashing or touching the password
+        // version), then soft-delete the account.
+        userService.verifyPassword(user.getId(), request.password());
         userService.softDelete(user.getId());
         
         return ResponseEntity.ok(Map.of("message", "Account deleted successfully"));
-    }
-
-    // Helper method to get user by email
-    private User getUserByEmail(String email) {
-        // This would be in UserService, but adding here for completeness
-        // In reality, UserService should have this method
-        throw new UnsupportedOperationException("Implement in UserService");
     }
 
     // Request/Response records
