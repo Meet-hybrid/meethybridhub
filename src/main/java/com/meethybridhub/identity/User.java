@@ -45,6 +45,14 @@ public class User {
     @Column(name = "email_verified", nullable = false)
     private boolean emailVerified = false;
 
+    /**
+     * Incremented on every password change. JWTs embed this value and are
+     * rejected when it no longer matches, so a password reset instantly
+     * invalidates all previously issued tokens.
+     */
+    @Column(name = "password_version", nullable = false)
+    private int passwordVersion = 0;
+
     @Column(name = "last_login_at")
     private Instant lastLoginAt;
 
@@ -133,6 +141,18 @@ public class User {
 
     public void setEmailVerified(boolean emailVerified) {
         this.emailVerified = emailVerified;
+    }
+
+    public int getPasswordVersion() {
+        return passwordVersion;
+    }
+
+    /**
+     * Invalidates every previously issued JWT for this user. Call after ANY
+     * password change (reset or self-service).
+     */
+    public void bumpPasswordVersion() {
+        this.passwordVersion++;
     }
 
     public Instant getLastLoginAt() {

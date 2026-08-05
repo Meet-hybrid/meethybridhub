@@ -72,6 +72,16 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
+    /**
+     * 400 — business-rule violations surfaced as IllegalArgumentException
+     * (e.g. duplicate email on registration, weak password). Without this,
+     * these fall into the generic handler and wrongly become 500s.
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiError> handleIllegalArgument(IllegalArgumentException ex) {
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
     /** 401 — authentication failed. */
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<ApiError> handleUnauthorized(UnauthorizedException ex) {
