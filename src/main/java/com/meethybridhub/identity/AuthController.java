@@ -187,9 +187,20 @@ public class AuthController {
      * Always returns the same success message, even for unknown or
      * already-verified addresses, to avoid leaking which emails are registered.
      */
+    /**
+     * Re-send the verification email (e.g. the original link expired).
+     * Always returns the same success message, even for unknown or
+     * already-verified addresses, to avoid leaking which emails are registered.
+     *
+     * Rate-limited (per address and per IP) to stop an attacker from flooding
+     * a victim's inbox with verification emails.
+     */
     @PostMapping("/resend-verification")
     public ResponseEntity<Map<String, String>> resendVerification(
-            @Valid @RequestBody ResendVerificationRequest request) {
+            @Valid @RequestBody ResendVerificationRequest request,
+            HttpServletRequest httpRequest) {
+        loginAttemptService.checkAndRecordEmailSend(
+                request.email(), clientIp(httpRequest), httpRequest.getHeader("User-Agent"));
         userService.resendVerificationEmail(request.email());
         return ResponseEntity.ok(Map.of(
                 "message", "Verification email sent if the account exists and is not yet verified"));
@@ -197,9 +208,17 @@ public class AuthController {
 
     /**
      * Request password reset.
+     * Always returns success even if the account doesn't exist (no enumeration).
+     *
+     * Rate-limited (per address and per IP) to stop an attacker from flooding
+     * a victim's inbox with reset emails.
      */
     @PostMapping("/reset-password")
-    public ResponseEntity<Map<String, String>> requestPasswordReset(@RequestBody ResetPasswordRequest request) {
+    public ResponseEntity<Map<String, String>> requestPasswordReset(
+            @RequestBody ResetPasswordRequest request,
+            HttpServletRequest httpRequest) {
+        loginAttemptService.checkAndRecordEmailSend(
+                request.email(), clientIp(httpRequest), httpRequest.getHeader("User-Agent"));
         userService.requestPasswordReset(request.email());
         return ResponseEntity.ok(Map.of("message", "Password reset email sent if account exists"));
     }

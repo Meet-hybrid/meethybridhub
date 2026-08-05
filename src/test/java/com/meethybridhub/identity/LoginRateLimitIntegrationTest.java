@@ -60,8 +60,8 @@ class LoginRateLimitIntegrationTest {
                 .andExpect(status().isUnauthorized());
 
         Instant windowStart = Instant.now().minus(15, ChronoUnit.MINUTES);
-        assertThat(loginAttemptRepository.countByEmailAndSuccessAndCreatedAtAfter(
-                "tracked@example.com", false, windowStart)).isEqualTo(1);
+        assertThat(loginAttemptRepository.countByEmailAndPurposeAndSuccessAndCreatedAtAfter(
+                "tracked@example.com", LoginAttempt.Purpose.LOGIN, false, windowStart)).isEqualTo(1);
 
         // Successful attempt is recorded too
         mockMvc.perform(post("/api/v1/auth/login")
@@ -69,8 +69,8 @@ class LoginRateLimitIntegrationTest {
                         .content("{\"email\": \"tracked@example.com\", \"password\": \"" + PASSWORD + "\"}"))
                 .andExpect(status().isOk());
 
-        assertThat(loginAttemptRepository.countByEmailAndSuccessAndCreatedAtAfter(
-                "tracked@example.com", true, windowStart)).isEqualTo(1);
+        assertThat(loginAttemptRepository.countByEmailAndPurposeAndSuccessAndCreatedAtAfter(
+                "tracked@example.com", LoginAttempt.Purpose.LOGIN, true, windowStart)).isEqualTo(1);
     }
 
     @Test

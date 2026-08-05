@@ -36,3 +36,11 @@ auth:
     # X-Forwarded-For is ignored by default (spoofing protection); one test
     # class opts in via @TestPropertySource to prove the opt-in path works.
     trust-forwarded-header: false
+
+  # Low email caps so flooding behavior is easy to exercise. Per-IP (10) is
+  # deliberately higher than per-email (3) so the per-email tests (4 requests
+  # from 127.0.0.1) don't trip the IP limit first.
+  email-limit:
+    max-per-email: 3
+    max-per-ip: 10
+    window-minutes: 15
