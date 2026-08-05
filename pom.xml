@@ -56,6 +56,13 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
+        <!-- Email sending (verification links, password resets). Uses the
+             mail.* properties in application.yml (SMTP optional in dev). -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
         <!-- Health / info / metrics endpoints -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

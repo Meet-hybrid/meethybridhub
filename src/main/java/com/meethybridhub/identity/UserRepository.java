@@ -80,11 +80,4 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @org.springframework.data.jpa.repository.Modifying
     @Query("UPDATE User u SET u.lastLoginAt = :timestamp WHERE u.id = :userId")
     void updateLastLogin(@Param("userId") Long userId, @Param("timestamp") Instant timestamp);
-
-    /**
-     * Soft delete user by setting status to DELETED.
-     */
-    @org.springframework.data.jpa.repository.Modifying
-    @Query("UPDATE User u SET u.status = 'DELETED' WHERE u.id = :userId")
-    void softDelete(@Param("userId") Long userId);
 }

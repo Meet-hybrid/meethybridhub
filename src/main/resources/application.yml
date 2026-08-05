@@ -62,6 +62,16 @@ jwt:
   refresh-token:
     expiration-days: ${JWT_REFRESH_EXPIRATION:30}
 
+# Store / tenant configuration
+# Base domain used by StoreFilter to resolve a tenant from the Host header
+# (e.g. divine-signature.meethybridhub.com -> slug divine-signature).
+store:
+  base-domain: ${STORE_BASE_DOMAIN:meethybridhub.com}
+
+# Public base URL used to build verification links in emails.
+app:
+  base-url: ${APP_BASE_URL:http://localhost:8080}
+
 # Email configuration (for verification and notifications)
 mail:
   host: ${MAIL_HOST:smtp.gmail.com}

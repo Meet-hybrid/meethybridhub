@@ -3,6 +3,7 @@ package com.meethybridhub.identity;
 import com.meethybridhub.common.exception.UnauthorizedException;
 import com.meethybridhub.identity.validation.ValidEmail;
 import com.meethybridhub.identity.validation.ValidPassword;
+import com.meethybridhub.store.StoreService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -16,6 +17,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -39,14 +41,20 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final UserService userService;
     private final JwtService jwtService;
+    // NOTE: identity -> store dependency is intentional (tokens carry the
+    // owner's store claim). No bean cycle: StoreService never depends on this
+    // controller.
+    private final StoreService storeService;
 
     public AuthController(
             AuthenticationManager authenticationManager,
             UserService userService,
-            JwtService jwtService) {
+            JwtService jwtService,
+            StoreService storeService) {
         this.authenticationManager = authenticationManager;
         this.userService = userService;
         this.jwtService = jwtService;
+        this.storeService = storeService;
     }
 
     /**
@@ -58,8 +66,9 @@ public class AuthController {
         
         // Generate tokens for immediate login after registration
         UserDetails userDetails = userService.loadUserByUsername(user.getEmail());
-        String accessToken = jwtService.generateAccessToken(userDetails);
-        String refreshToken = jwtService.generateRefreshToken(userDetails);
+        Map<String, Object> claims = tenantClaims(user.getId());
+        String accessToken = jwtService.generateAccessToken(userDetails, claims);
+        String refreshToken = jwtService.generateRefreshToken(userDetails, claims);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new AuthResponse(accessToken, refreshToken, "Registration successful. Please verify your email."));
@@ -80,8 +89,9 @@ public class AuthController {
             
             // Generate tokens
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-            String accessToken = jwtService.generateAccessToken(userDetails);
-            String refreshToken = jwtService.generateRefreshToken(userDetails);
+            Map<String, Object> claims = tenantClaims(((AppUser) userDetails).getUser().getId());
+            String accessToken = jwtService.generateAccessToken(userDetails, claims);
+            String refreshToken = jwtService.generateRefreshToken(userDetails, claims);
             
             // Update user's last login
             userService.recordLogin(userDetails.getUsername());
@@ -99,17 +109,21 @@ public class AuthController {
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponse> refresh(@RequestBody RefreshTokenRequest request) {
         try {
-            // Validate refresh token
+            // Validate refresh token (signature, expiry, AND that the password
+            // hasn't changed since it was issued)
             String username = jwtService.extractUsername(request.refreshToken());
-            
-            if (!jwtService.validateToken(request.refreshToken(), userService.loadUserByUsername(username))) {
+            UserDetails userDetails = userService.loadUserByUsername(username);
+
+            if (!jwtService.validateToken(request.refreshToken(), userDetails)
+                    || !jwtService.passwordVersionMatches(request.refreshToken(), userDetails)) {
                 throw new UnauthorizedException("Invalid refresh token");
             }
 
-            // Generate new tokens
-            UserDetails userDetails = userService.loadUserByUsername(username);
-            String newAccessToken = jwtService.generateAccessToken(userDetails);
-            String newRefreshToken = jwtService.generateRefreshToken(userDetails);
+            // Generate new tokens (re-deriving the store claim in case the user
+            // created a store since the refresh token was issued)
+            Map<String, Object> claims = tenantClaims(((AppUser) userDetails).getUser().getId());
+            String newAccessToken = jwtService.generateAccessToken(userDetails, claims);
+            String newRefreshToken = jwtService.generateRefreshToken(userDetails, claims);
 
             return ResponseEntity.ok(new AuthResponse(newAccessToken, newRefreshToken, "Token refreshed"));
         } catch (Exception e) {
@@ -125,6 +139,19 @@ public class AuthController {
     public ResponseEntity<Map<String, String>> verifyEmail(@RequestParam String token) {
         userService.verifyEmail(token);
         return ResponseEntity.ok(Map.of("message", "Email verified successfully"));
+    }
+
+    /**
+     * Re-send the verification email (e.g. the original link expired).
+     * Always returns the same success message, even for unknown or
+     * already-verified addresses, to avoid leaking which emails are registered.
+     */
+    @PostMapping("/resend-verification")
+    public ResponseEntity<Map<String, String>> resendVerification(
+            @Valid @RequestBody ResendVerificationRequest request) {
+        userService.resendVerificationEmail(request.email());
+        return ResponseEntity.ok(Map.of(
+                "message", "Verification email sent if the account exists and is not yet verified"));
     }
 
     /**
@@ -177,6 +204,11 @@ public class AuthController {
             String email
     ) {}
 
+    public record ResendVerificationRequest(
+            @ValidEmail
+            String email
+    ) {}
+
     public record ConfirmPasswordResetRequest(
             @NotBlank(message = "Reset token is required")
             String token,
@@ -190,4 +222,16 @@ public class AuthController {
             String refreshToken,
             String message
     ) {}
+
+    /**
+     * Claims that pin a token to the user's store: the ID of the active store
+     * they own, when they own one. StoreFilter later reads this to resolve the
+     * tenant for store-owner dashboards without headers or subdomains.
+     */
+    private Map<String, Object> tenantClaims(Long userId) {
+        Map<String, Object> claims = new HashMap<>();
+        storeService.findActiveStoreIdForOwner(userId)
+                .ifPresent(storeId -> claims.put(JwtService.CLAIM_STORE_ID, storeId));
+        return claims;
+    }
 }

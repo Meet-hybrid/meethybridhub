@@ -1,11 +1,13 @@
 package com.meethybridhub.config;
 
 import com.meethybridhub.identity.JwtAuthenticationFilter;
+import com.meethybridhub.store.StoreFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -29,12 +31,15 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  */
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final StoreFilter storeFilter;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, StoreFilter storeFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.storeFilter = storeFilter;
     }
 
     @Bean
@@ -51,26 +56,33 @@ public class SecurityConfig {
                     "/swagger-ui/**",
                     "/swagger-ui.html"
                 ).permitAll()
-                
+
                 // Authentication endpoints (public)
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/auth/verify").permitAll()
-                
-                // User endpoints (authenticated users only)
-                .requestMatchers(HttpMethod.GET, "/api/v1/users/me").authenticated()
-                .requestMatchers(HttpMethod.PUT, "/api/v1/users/me").authenticated()
-                
+
+                // User profile endpoints (any authenticated user)
+                .requestMatchers("/api/v1/users/**").authenticated()
+
                 // Admin endpoints (ADMIN role required)
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
-                
-                // Store endpoints (STORE_OWNER or ADMIN role required)
-                .requestMatchers("/api/v1/stores/**").hasAnyRole("STORE_OWNER", "ADMIN")
-                
-                // All other endpoints require authentication
-                .anyRequest().authenticated()
+
+                // !!! INVARIANT — READ BEFORE ADDING ENDPOINTS !!!
+                // Everything else is permitted at the URL level on purpose:
+                //   * granular rules (roles, ownership) live in @PreAuthorize on
+                //     each controller method, and
+                //   * a permitAll catch-all lets unknown paths reach the 404
+                //     handler instead of being masked as a 403 by the filter chain.
+                // CONSEQUENCE: any new endpoint is PUBLIC unless it (a) matches a
+                // URL rule above or (b) carries @PreAuthorize. Always add one of
+                // the two when introducing a controller.
+                .anyRequest().permitAll()
             )
             // Add JWT filter before the default username/password filter
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+            // Tenant resolution middleware: runs after authentication so the
+            // store context is available to authenticated handlers.
+            .addFilterAfter(storeFilter, JwtAuthenticationFilter.class);
         
         return http.build();
     }

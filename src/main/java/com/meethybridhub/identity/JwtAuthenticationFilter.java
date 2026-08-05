@@ -77,8 +77,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // Load user details from database
                 UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
                 
-                // Validate token against user details
-                if (jwtService.validateToken(jwt, userDetails)) {
+                // Validate the token AND that the account may actually use the API.
+                // The password-version check rejects every token issued before a
+                // password reset/change.
+                if (jwtService.validateToken(jwt, userDetails)
+                        && jwtService.passwordVersionMatches(jwt, userDetails)
+                        && userDetails.isEnabled()
+                        && userDetails.isAccountNonLocked()) {
                     
                     // Create authentication token
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
@@ -95,7 +100,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     
                     log.debug("Authenticated user: {}", userEmail);
                 } else {
-                    log.debug("Invalid JWT token for user: {}", userEmail);
+                    log.debug("Token rejected for user {} (invalid, stale password version, unverified, or locked)", userEmail);
                 }
             }
         } catch (Exception e) {
@@ -126,7 +131,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                path.equals("/api/v1/auth/register") ||
                path.equals("/api/v1/auth/verify") ||
                path.equals("/api/v1/auth/refresh") ||
-               path.equals("/api/v1/auth/reset-password");
+               path.equals("/api/v1/auth/reset-password") ||
+               path.equals("/api/v1/auth/resend-verification");
     }
 
     /**
