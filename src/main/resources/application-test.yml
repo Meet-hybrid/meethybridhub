@@ -21,3 +21,18 @@ spring:
 
   flyway:
     enabled: false
+
+# Never fire scheduled jobs during tests (they could mutate shared in-memory data).
+app:
+  scheduling:
+    enabled: false
+
+# Low thresholds so lockout/rate-limit behavior is easy to exercise.
+auth:
+  rate-limit:
+    max-failed-attempts: 3
+    max-attempts-per-ip: 5
+    window-minutes: 15
+    # X-Forwarded-For is ignored by default (spoofing protection); one test
+    # class opts in via @TestPropertySource to prove the opt-in path works.
+    trust-forwarded-header: false
