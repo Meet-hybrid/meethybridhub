@@ -2,11 +2,13 @@ package com.meethybridhub.common.api;
 
 import com.meethybridhub.common.exception.BadRequestException;
 import com.meethybridhub.common.exception.ForbiddenException;
+import com.meethybridhub.common.exception.RateLimitException;
 import com.meethybridhub.common.exception.ResourceNotFoundException;
 import com.meethybridhub.common.exception.UnauthorizedException;
 import io.jsonwebtoken.MalformedJwtException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -116,6 +118,19 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ForbiddenException.class)
     public ResponseEntity<ApiError> handleForbidden(ForbiddenException ex) {
         return build(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
+    /**
+     * 429 — the client exceeded a rate limit. Retry-After tells the caller how
+     * long until the limit window resets (derived from the configured window,
+     * e.g. 900s for the default 15 minutes).
+     */
+    @ExceptionHandler(RateLimitException.class)
+    public ResponseEntity<ApiError> handleRateLimit(RateLimitException ex) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(ex.getRetryAfterSeconds()))
+                .body(ApiError.of(HttpStatus.TOO_MANY_REQUESTS.value(),
+                        HttpStatus.TOO_MANY_REQUESTS.getReasonPhrase(), ex.getMessage()));
     }
 
     /**

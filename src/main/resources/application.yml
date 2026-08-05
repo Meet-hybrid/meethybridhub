@@ -72,6 +72,17 @@ store:
 app:
   base-url: ${APP_BASE_URL:http://localhost:8080}
 
+# Login rate limiting / account lockout (see LoginAttemptService).
+# The login_attempts table (V2) feeds these windowed counters.
+auth:
+  rate-limit:
+    max-failed-attempts: ${AUTH_MAX_FAILED_ATTEMPTS:5}     # per email, per window
+    max-attempts-per-ip: ${AUTH_MAX_ATTEMPTS_PER_IP:20}    # per IP, per window
+    window-minutes: ${AUTH_RATE_LIMIT_WINDOW_MINUTES:15}
+    # Trust X-Forwarded-For ONLY when the app sits behind YOUR reverse proxy;
+    # otherwise clients can spoof the header and rotate IPs past the per-IP limit.
+    trust-forwarded-header: ${AUTH_TRUST_FORWARDED_HEADER:false}
+
 # Email configuration (for verification and notifications)
 mail:
   host: ${MAIL_HOST:smtp.gmail.com}

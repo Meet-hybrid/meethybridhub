@@ -4,9 +4,11 @@ import com.meethybridhub.common.exception.UnauthorizedException;
 import com.meethybridhub.identity.validation.ValidEmail;
 import com.meethybridhub.identity.validation.ValidPassword;
 import com.meethybridhub.store.StoreService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -45,16 +47,22 @@ public class AuthController {
     // owner's store claim). No bean cycle: StoreService never depends on this
     // controller.
     private final StoreService storeService;
+    private final LoginAttemptService loginAttemptService;
+
+    @Value("${auth.rate-limit.trust-forwarded-header:false}")
+    private boolean trustForwardedHeader;
 
     public AuthController(
             AuthenticationManager authenticationManager,
             UserService userService,
             JwtService jwtService,
-            StoreService storeService) {
+            StoreService storeService,
+            LoginAttemptService loginAttemptService) {
         this.authenticationManager = authenticationManager;
         this.userService = userService;
         this.jwtService = jwtService;
         this.storeService = storeService;
+        this.loginAttemptService = loginAttemptService;
     }
 
     /**
@@ -78,7 +86,16 @@ public class AuthController {
      * Authenticate user and return JWT tokens.
      */
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<AuthResponse> login(
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpRequest) {
+
+        String ip = clientIp(httpRequest);
+        String userAgent = httpRequest.getHeader("User-Agent");
+
+        // Enforce per-email lockout and per-IP rate limit BEFORE authenticating.
+        loginAttemptService.checkRateLimit(request.email(), ip);
+
         try {
             // Authenticate with Spring Security
             Authentication authentication = authenticationManager.authenticate(
@@ -93,14 +110,38 @@ public class AuthController {
             String accessToken = jwtService.generateAccessToken(userDetails, claims);
             String refreshToken = jwtService.generateRefreshToken(userDetails, claims);
             
-            // Update user's last login
+            // Update user's last login and record the successful attempt
             userService.recordLogin(userDetails.getUsername());
+            loginAttemptService.recordSuccess(request.email(), ip, userAgent);
 
             return ResponseEntity.ok(new AuthResponse(accessToken, refreshToken, "Login successful"));
         } catch (AuthenticationException e) {
-            // Convert Spring Security exceptions to our custom exception
+            // Record the failure (feeds the lockout counter), then convert to
+            // our custom exception.
+            loginAttemptService.recordFailure(request.email(), ip, userAgent, e.getClass().getSimpleName());
             throw new UnauthorizedException("Invalid email or password");
         }
+    }
+
+    /**
+     * Client IP for rate limiting. X-Forwarded-For is only honored when
+     * {@code auth.rate-limit.trust-forwarded-header} is enabled (i.e. the app
+     * sits behind OUR reverse proxy); trusting the raw header by default would
+     * let anyone spoof it and rotate IPs past the per-IP limit.
+     *
+     * When trusted, the LAST hop is used: X-Forwarded-For is appended by each
+     * proxy, so the final element is the one OUR proxy added (the real client).
+     * The first element is client-supplied and still spoofable.
+     */
+    private String clientIp(HttpServletRequest request) {
+        if (trustForwardedHeader) {
+            String forwarded = request.getHeader("X-Forwarded-For");
+            if (forwarded != null && !forwarded.isBlank()) {
+                String[] hops = forwarded.split(",");
+                return hops[hops.length - 1].trim();
+            }
+        }
+        return request.getRemoteAddr();
     }
 
     /**
