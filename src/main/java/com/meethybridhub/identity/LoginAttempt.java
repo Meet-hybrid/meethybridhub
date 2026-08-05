@@ -12,7 +12,7 @@ import java.time.Instant;
  *
  * Maps to the {@code login_attempts} table created in V2__identity.sql (indexed
  * on {@code (email, created_at)} and {@code (ip_address, created_at)}; the
- * {@code purpose} column was added by V5). Records older than 24 hours are
+ * {@code purpose} column was added by V6). Records older than 24 hours are
  * purged by the daily maintenance job.
  */
 @Entity
