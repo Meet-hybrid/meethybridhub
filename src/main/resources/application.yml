@@ -83,6 +83,14 @@ auth:
     # otherwise clients can spoof the header and rotate IPs past the per-IP limit.
     trust-forwarded-header: ${AUTH_TRUST_FORWARDED_HEADER:false}
 
+  # Email flooding protection for resend-verification / reset-password
+  # (see LoginAttemptService). Recorded in the same login_attempts table under
+  # purpose='EMAIL_SEND', sharing the 24h retention.
+  email-limit:
+    max-per-email: ${AUTH_MAX_EMAILS_PER_EMAIL:3}    # emails to one address, per window
+    max-per-ip: ${AUTH_MAX_EMAILS_PER_IP:10}         # emails from one IP, per window
+    window-minutes: ${AUTH_EMAIL_LIMIT_WINDOW_MINUTES:15}
+
 # Email configuration (for verification and notifications)
 mail:
   host: ${MAIL_HOST:smtp.gmail.com}

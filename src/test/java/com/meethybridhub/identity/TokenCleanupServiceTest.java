@@ -92,10 +92,10 @@ class TokenCleanupServiceTest {
         tokenCleanupService.purgeExpiredTokens();
 
         Instant dayAgo = Instant.now().minus(1, ChronoUnit.DAYS);
-        assertThat(loginAttemptRepository.countByEmailAndSuccessAndCreatedAtAfter(
-                "old@example.com", false, dayAgo)).isZero();
-        assertThat(loginAttemptRepository.countByEmailAndSuccessAndCreatedAtAfter(
-                "recent@example.com", false, dayAgo)).isEqualTo(1);
+        assertThat(loginAttemptRepository.countByEmailAndPurposeAndSuccessAndCreatedAtAfter(
+                "old@example.com", LoginAttempt.Purpose.LOGIN, false, dayAgo)).isZero();
+        assertThat(loginAttemptRepository.countByEmailAndPurposeAndSuccessAndCreatedAtAfter(
+                "recent@example.com", LoginAttempt.Purpose.LOGIN, false, dayAgo)).isEqualTo(1);
     }
 
     @Test
