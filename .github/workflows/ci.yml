@@ -7,10 +7,22 @@ on:
     branches: [main]
   pull_request:
 
+# Only one CI run per ref at a time — a new push cancels the stale one.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# `checks: write` lets dorny/test-reporter attach test results as check-run
+# annotations directly on the PR's changed lines.
+permissions:
+  contents: read
+  checks: write
+
 jobs:
   build:
     name: Build & Test (JDK 21)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,3 +38,50 @@ jobs:
       # version as every developer — no "works on my machine".
       - name: Build & run tests
         run: ./mvnw -B verify --no-transfer-progress
+
+      # Keep the raw surefire XMLs around for debugging failed runs.
+      - name: Upload test reports
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
+          retention-days: 7
+          # Don't fail the job if the build died before reports were generated.
+          if-no-files-found: warn
+
+      # Publish JUnit results as PR annotations + a "Maven Tests" check run.
+      # `if: success() || failure()` is what makes this useful — it also runs
+      # when the tests fail, which is exactly when you want the annotations.
+      - name: Publish test results to PR
+        uses: dorny/test-reporter@v1
+        if: success() || failure()
+        with:
+          name: Maven Tests
+          path: target/surefire-reports/TEST-*.xml
+          reporter: java-junit
+
+      # JaCoCo coverage runs inside `./mvnw verify` (line >= 80%, branch >= 55%
+      # enforced by the pom's `check` goal). Archive the HTML + XML report so
+      # coverage can be inspected without re-running the build.
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: jacoco-report
+          path: target/site/jacoco/
+          retention-days: 7
+          if-no-files-found: warn
+
+      # Codecov: uploads the JaCoCo XML so coverage trends, the README badge
+      # and PR comments come from codecov.io. Tokenless upload works for public
+      # repos; for private repos add a CODECOV_TOKEN secret (Codecov dashboard
+      # > repo > Settings). fail_ci_if_error stays off so a Codecov hiccup
+      # never fails the build.
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        if: success() || failure()
+        with:
+          files: target/site/jacoco/jacoco.xml
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

@@ -1,0 +1,143 @@
+<mxfile host="app.diagrams.net" agent="Buffy (Freebuff)" version="24.7.7" type="device">
+  <diagram id="sequence-request" name="Sequence — Authenticated Request (Tenant Resolution)">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Lifelines -->
+        <mxCell id="llClient" value="Client" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;expand=0;points=[];portConstraint=eastwest;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;fontStyle=1;verticalAlign=top;verticalLabelPosition=top;" vertex="1" parent="1">
+          <mxGeometry x="15" y="60" width="110" height="1080" as="geometry" />
+        </mxCell>
+        <mxCell id="llJwtFilter" value="JwtAuthenticationFilter" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;expand=0;points=[];portConstraint=eastwest;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;fontStyle=1;verticalAlign=top;verticalLabelPosition=top;" vertex="1" parent="1">
+          <mxGeometry x="200" y="60" width="200" height="1080" as="geometry" />
+        </mxCell>
+        <mxCell id="llStoreFilter" value="StoreFilter" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;expand=0;points=[];portConstraint=eastwest;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;fontStyle=1;verticalAlign=top;verticalLabelPosition=top;" vertex="1" parent="1">
+          <mxGeometry x="470" y="60" width="170" height="1080" as="geometry" />
+        </mxCell>
+        <mxCell id="llTenantCtx" value="TenantContext" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;expand=0;points=[];portConstraint=eastwest;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;fontStyle=1;verticalAlign=top;verticalLabelPosition=top;" vertex="1" parent="1">
+          <mxGeometry x="710" y="60" width="160" height="1080" as="geometry" />
+        </mxCell>
+        <mxCell id="llCtl" value="StoreController" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;expand=0;points=[];portConstraint=eastwest;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;fontStyle=1;verticalAlign=top;verticalLabelPosition=top;" vertex="1" parent="1">
+          <mxGeometry x="950" y="60" width="170" height="1080" as="geometry" />
+        </mxCell>
+        <mxCell id="llSvc" value="StoreService" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;expand=0;points=[];portConstraint=eastwest;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;fontStyle=1;verticalAlign=top;verticalLabelPosition=top;" vertex="1" parent="1">
+          <mxGeometry x="1190" y="60" width="160" height="1080" as="geometry" />
+        </mxCell>
+        <mxCell id="llDb" value="StoreRepository&#10;(PostgreSQL)" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;expand=0;points=[];portConstraint=eastwest;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;fontStyle=1;verticalAlign=top;verticalLabelPosition=top;" vertex="1" parent="1">
+          <mxGeometry x="1440" y="60" width="160" height="1080" as="geometry" />
+        </mxCell>
+
+        <!-- Messages -->
+        <mxCell id="r1" value="GET /api/v1/stores/me&#10;Authorization: Bearer …&#10;X-Store-Id: 7" style="html=1;fontSize=11;endArrow=block;endFill=1;rounded=0;strokeColor=#333333;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="70" y="150" as="sourcePoint" />
+            <mxPoint x="300" y="150" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r2" value="extract + validate token&#10;(signature · expiry · pwdv claim)&#10;loadUserByUsername → AppUser" style="html=1;fontSize=11;endArrow=block;endFill=1;rounded=0;strokeColor=#333333;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="315" y="225" as="sourcePoint" />
+            <mxPoint x="315" y="265" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="345" y="225" />
+              <mxPoint x="345" y="265" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r2lbl" value="JwtService + UserDetailsServiceImpl (DB lookup)" style="html=1;fontSize=10;fontStyle=2;fontColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="320" y="270" width="300" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="r3" value="set SecurityContext&#10;(ROLE_STORE_OWNER)" style="html=1;fontSize=11;endArrow=block;endFill=1;rounded=0;strokeColor=#333333;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="315" y="310" as="sourcePoint" />
+            <mxPoint x="315" y="340" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="345" y="310" />
+              <mxPoint x="345" y="340" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r4" value="chain.doFilter → StoreFilter" style="html=1;fontSize=11;endArrow=block;endFill=1;rounded=0;strokeColor=#333333;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="300" y="390" as="sourcePoint" />
+            <mxPoint x="555" y="390" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r5" value="resolveTenant() — first match wins" style="html=1;fontSize=11;endArrow=block;endFill=1;rounded=0;strokeColor=#333333;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="570" y="465" as="sourcePoint" />
+            <mxPoint x="570" y="500" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="600" y="465" />
+              <mxPoint x="600" y="500" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r5lbl" value="1) X-Store-Id header → 2) subdomain → 3) JWT claim (verified to exist)" style="html=1;fontSize=10;fontStyle=2;fontColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="575" y="505" width="430" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="r6" value="setStoreId(7)" style="html=1;fontSize=11;endArrow=block;endFill=1;rounded=0;strokeColor=#333333;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="555" y="545" as="sourcePoint" />
+            <mxPoint x="790" y="545" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r7" value="dispatch → StoreController" style="html=1;fontSize=11;endArrow=block;endFill=1;rounded=0;strokeColor=#333333;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="555" y="620" as="sourcePoint" />
+            <mxPoint x="1035" y="620" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r8" value="getCurrentTenantStore(user)&#10;@PreAuthorize STORE_OWNER/ADMIN" style="html=1;fontSize=11;endArrow=block;endFill=1;rounded=0;strokeColor=#333333;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1035" y="700" as="sourcePoint" />
+            <mxPoint x="1270" y="700" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r9" value="requireStoreId()" style="html=1;fontSize=11;endArrow=block;endFill=1;rounded=0;strokeColor=#333333;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1270" y="780" as="sourcePoint" />
+            <mxPoint x="790" y="780" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r10" value="findById(7)" style="html=1;fontSize=11;endArrow=block;endFill=1;rounded=0;strokeColor=#333333;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1270" y="860" as="sourcePoint" />
+            <mxPoint x="1520" y="860" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r11" value="Store (or 404)" style="html=1;fontSize=11;endArrow=block;endFill=1;rounded=0;dashed=1;strokeColor=#333333;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1520" y="910" as="sourcePoint" />
+            <mxPoint x="1270" y="910" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r12" value="ownership check:&#10;owner == user || ADMIN&#10;else → 403 Forbidden" style="html=1;fontSize=11;endArrow=block;endFill=1;rounded=0;strokeColor=#333333;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1285" y="985" as="sourcePoint" />
+            <mxPoint x="1285" y="1025" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="1315" y="985" />
+              <mxPoint x="1315" y="1025" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r13" value="200 StoreResponse" style="html=1;fontSize=11;endArrow=block;endFill=1;rounded=0;dashed=1;strokeColor=#82b366;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1035" y="1060" as="sourcePoint" />
+            <mxPoint x="70" y="1060" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r14" value="finally: TenantContext.clear() — no cross-request leak" style="html=1;fontSize=10;fontStyle=2;fontColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="470" y="1100" width="360" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Title -->
+        <mxCell id="title5" value="MeethybridHub — Authenticated Request Lifecycle (tenant resolution)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="450" y="0" width="900" height="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

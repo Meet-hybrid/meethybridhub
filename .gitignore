@@ -25,3 +25,8 @@ Thumbs.db
 
 # === Misc ===
 *.tmp
+
+# === Python ===
+venv/
+__pycache__/
+docs/uml/preview.html

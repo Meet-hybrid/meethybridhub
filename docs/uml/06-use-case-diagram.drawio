@@ -1,0 +1,153 @@
+<mxfile host="app.diagrams.net" agent="Buffy (Freebuff)" version="24.7.7" type="device">
+  <diagram id="use-case-diagram" name="Use Case Diagram">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="950" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ===================== Actors ===================== -->
+        <mxCell id="actGuest" value="Guest" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontSize=13;fontStyle=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="40" y="200" width="30" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="actUser" value="User&#10;(Customer)" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontSize=13;fontStyle=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="40" y="430" width="30" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="actOwner" value="Store Owner" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontSize=13;fontStyle=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="40" y="650" width="30" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="actAdmin" value="Admin" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontSize=13;fontStyle=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="1180" y="430" width="30" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ===================== System boundary ===================== -->
+        <mxCell id="boundary" value="MeethybridHub API — /api/v1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#333333;dashed=1;fontSize=14;fontStyle=1;verticalAlign=top;align=left;spacingLeft=12;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="200" y="80" width="900" height="780" as="geometry" />
+        </mxCell>
+
+        <!-- ===================== Use cases ===================== -->
+        <!-- Auth -->
+        <mxCell id="ucRegister" value="Register account" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="boundary">
+          <mxGeometry x="240" y="130" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ucLogin" value="Login" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="boundary">
+          <mxGeometry x="440" y="130" width="130" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ucVerify" value="Verify email&#10;(token)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="boundary">
+          <mxGeometry x="630" y="130" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ucReset" value="Reset password" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="boundary">
+          <mxGeometry x="820" y="130" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ucRefresh" value="Refresh tokens" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="boundary">
+          <mxGeometry x="700" y="240" width="130" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- User profile -->
+        <mxCell id="ucProfile" value="View / update&#10;profile" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="boundary">
+          <mxGeometry x="240" y="250" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ucChangePwd" value="Change&#10;password" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="boundary">
+          <mxGeometry x="420" y="250" width="130" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ucDelete" value="Delete account&#10;(soft)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="boundary">
+          <mxGeometry x="580" y="250" width="130" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ucResend" value="Resend&#10;verification" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="boundary">
+          <mxGeometry x="850" y="240" width="130" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Store -->
+        <mxCell id="ucCreateStore" value="Create store" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="boundary">
+          <mxGeometry x="240" y="420" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ucMyStore" value="View my store&#10;(tenant-scoped)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="boundary">
+          <mxGeometry x="420" y="420" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ucDomains" value="Manage domains" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="boundary">
+          <mxGeometry x="610" y="420" width="140" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Admin -->
+        <mxCell id="ucListUsers" value="List / view users" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="boundary">
+          <mxGeometry x="240" y="600" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ucRoles" value="Change roles" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="boundary">
+          <mxGeometry x="420" y="600" width="130" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ucSuspend" value="Suspend / activate&#10;user" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="boundary">
+          <mxGeometry x="590" y="600" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ucDeleteUser" value="Delete user" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="boundary">
+          <mxGeometry x="770" y="600" width="130" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ===================== Associations ===================== -->
+        <!-- Guest -->
+        <mxCell id="aGuestReg" style="html=1;endArrow=none;endFill=0;strokeColor=#333333;" edge="1" parent="1" source="actGuest" target="ucRegister">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="aGuestLogin" style="html=1;endArrow=none;endFill=0;strokeColor=#333333;" edge="1" parent="1" source="actGuest" target="ucLogin">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- User (inherits guest actions via login, plus profile) -->
+        <mxCell id="aUserLogin" style="html=1;endArrow=none;endFill=0;strokeColor=#333333;" edge="1" parent="1" source="actUser" target="ucLogin">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="aUserVerify" style="html=1;endArrow=none;endFill=0;strokeColor=#333333;" edge="1" parent="1" source="actUser" target="ucVerify">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="aUserProfile" style="html=1;endArrow=none;endFill=0;strokeColor=#333333;" edge="1" parent="1" source="actUser" target="ucProfile">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="aUserChangePwd" style="html=1;endArrow=none;endFill=0;strokeColor=#333333;" edge="1" parent="1" source="actUser" target="ucChangePwd">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="aUserDelete" style="html=1;endArrow=none;endFill=0;strokeColor=#333333;" edge="1" parent="1" source="actUser" target="ucDelete">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="aUserResend" style="html=1;endArrow=none;endFill=0;strokeColor=#333333;" edge="1" parent="1" source="actUser" target="ucResend">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="aUserRefresh" style="html=1;endArrow=none;endFill=0;strokeColor=#333333;" edge="1" parent="1" source="actUser" target="ucRefresh">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Store Owner -->
+        <mxCell id="aOwnerCreate" style="html=1;endArrow=none;endFill=0;strokeColor=#333333;" edge="1" parent="1" source="actOwner" target="ucCreateStore">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="aOwnerMyStore" style="html=1;endArrow=none;endFill=0;strokeColor=#333333;" edge="1" parent="1" source="actOwner" target="ucMyStore">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="aOwnerDomains" style="html=1;endArrow=none;endFill=0;strokeColor=#333333;" edge="1" parent="1" source="actOwner" target="ucDomains">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Admin -->
+        <mxCell id="aAdminList" style="html=1;endArrow=none;endFill=0;strokeColor=#333333;" edge="1" parent="1" source="actAdmin" target="ucListUsers">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="aAdminRoles" style="html=1;endArrow=none;endFill=0;strokeColor=#333333;" edge="1" parent="1" source="actAdmin" target="ucRoles">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="aAdminSuspend" style="html=1;endArrow=none;endFill=0;strokeColor=#333333;" edge="1" parent="1" source="actAdmin" target="ucSuspend">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="aAdminDelete" style="html=1;endArrow=none;endFill=0;strokeColor=#333333;" edge="1" parent="1" source="actAdmin" target="ucDeleteUser">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- extend relation: resend verification extends verify -->
+        <mxCell id="exRegVerify" value="«extend»" style="html=1;fontSize=10;endArrow=open;endFill=0;dashed=1;strokeColor=#9673a6;" edge="1" parent="1" source="ucResend" target="ucVerify">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Title -->
+        <mxCell id="title6" value="MeethybridHub — Use Cases" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="350" y="0" width="600" height="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

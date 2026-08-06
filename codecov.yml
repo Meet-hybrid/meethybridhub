@@ -1,0 +1,23 @@
+# Codecov configuration — https://docs.codecov.com/docs/codecov-yaml
+#
+# Mirrors the JaCoCo floors in pom.xml (line >= 80%) so the two guards agree.
+# Codecov also enforces these on PRs as status checks, in addition to the
+# JaCoCo build-time check in CI.
+
+codecov:
+  require_ci_to_pass: true   # PR must have a green CI run before these checks count
+
+coverage:
+  status:
+    project:
+      default:
+        target: 80%          # whole-project line coverage must stay at/above 80%
+        threshold: 1%        # tolerate small day-to-day fluctuations
+    patch:
+      default:
+        target: 80%          # newly added/modified lines should stay at the bar
+        threshold: 5%        # a little slack for refactors that touch edge cases
+
+comment:
+  layout: "reach, diff, files"
+  behavior: default
