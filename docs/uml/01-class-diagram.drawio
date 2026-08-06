@@ -1,0 +1,217 @@
+<mxfile host="app.diagrams.net" agent="Buffy (Freebuff)" version="24.7.7" type="device">
+  <diagram id="class-diagram" name="Class Diagram — Domain Model">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ===================== User ===================== -->
+        <mxCell id="clsUser" value="User" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="260" height="266" as="geometry" />
+        </mxCell>
+        <mxCell id="clsUserAttr" value="- id: Long&#10;- email: String&#10;- passwordHash: String&#10;- fullName: String&#10;- roles: String&#10;- status: UserStatus&#10;- emailVerified: boolean&#10;- passwordVersion: int&#10;- lastLoginAt: Instant&#10;- createdAt: Instant&#10;- updatedAt: Instant" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;strokeColor=none;fillColor=none;" vertex="1" parent="clsUser">
+          <mxGeometry y="26" width="260" height="165" as="geometry" />
+        </mxCell>
+        <mxCell id="clsUserOps" value="+ hasRole(role: String): boolean&#10;+ addRole(role: String)&#10;+ canAuthenticate(): boolean&#10;+ recordLogin()&#10;+ bumpPasswordVersion()" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;strokeColor=none;fillColor=none;" vertex="1" parent="clsUser">
+          <mxGeometry y="191" width="260" height="75" as="geometry" />
+        </mxCell>
+
+        <!-- ===================== AppUser ===================== -->
+        <mxCell id="clsAppUser" value="AppUser  (implements UserDetails)" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="40" y="360" width="260" height="161" as="geometry" />
+        </mxCell>
+        <mxCell id="clsAppUserAttr" value="- user: User&#10;- authorities: List&lt;SimpleGrantedAuthority&gt;" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;strokeColor=none;fillColor=none;" vertex="1" parent="clsAppUser">
+          <mxGeometry y="26" width="260" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="clsAppUserOps" value="+ getAuthorities(): Collection&#10;+ getPassword(): String&#10;+ getUsername(): String&#10;+ isAccountNonLocked(): boolean&#10;+ isEnabled(): boolean&#10;+ getPasswordVersion(): int&#10;+ getUser(): User" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;strokeColor=none;fillColor=none;" vertex="1" parent="clsAppUser">
+          <mxGeometry y="56" width="260" height="105" as="geometry" />
+        </mxCell>
+
+        <!-- ===================== UserDetails (interface) ===================== -->
+        <mxCell id="clsUserDetails" value="«interface» UserDetails&#10;(org.springframework.security&#10;.core.userdetails)" style="swimlane;fontStyle=3;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="760" y="470" width="220" height="116" as="geometry" />
+        </mxCell>
+        <mxCell id="clsUserDetailsOps" value="+ getAuthorities()&#10;+ getPassword()&#10;+ getUsername()" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;strokeColor=none;fillColor=none;" vertex="1" parent="clsUserDetails">
+          <mxGeometry y="26" width="200" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- ===================== Role (enum) ===================== -->
+        <mxCell id="clsRole" value="«enum» Role" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="40" y="580" width="180" height="101" as="geometry" />
+        </mxCell>
+        <mxCell id="clsRoleAttr" value="ADMIN&#10;STORE_OWNER&#10;CUSTOMER" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;strokeColor=none;fillColor=none;" vertex="1" parent="clsRole">
+          <mxGeometry y="26" width="180" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="clsRoleOps" value="+ isValid(value: String): boolean" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;strokeColor=none;fillColor=none;" vertex="1" parent="clsRole">
+          <mxGeometry y="71" width="180" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- ===================== UserStatus (enum) ===================== -->
+        <mxCell id="clsUserStatus" value="«enum» UserStatus" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="40" y="720" width="180" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="clsUserStatusAttr" value="PENDING&#10;ACTIVE&#10;SUSPENDED&#10;DELETED" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;strokeColor=none;fillColor=none;" vertex="1" parent="clsUserStatus">
+          <mxGeometry y="26" width="180" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ===================== Store ===================== -->
+        <mxCell id="clsStore" value="Store" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="420" y="40" width="260" height="221" as="geometry" />
+        </mxCell>
+        <mxCell id="clsStoreAttr" value="- id: Long&#10;- owner: User&#10;- name: String&#10;- slug: String&#10;- description: String&#10;- status: StoreStatus&#10;- createdAt: Instant&#10;- updatedAt: Instant" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;strokeColor=none;fillColor=none;" vertex="1" parent="clsStore">
+          <mxGeometry y="26" width="260" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="clsStoreOps" value="+ getSlug(): String&#10;+ getStatus(): StoreStatus&#10;+ setStatus(status: StoreStatus)&#10;+ getOwner(): User&#10;+ setOwner(owner: User)" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;strokeColor=none;fillColor=none;" vertex="1" parent="clsStore">
+          <mxGeometry y="146" width="260" height="75" as="geometry" />
+        </mxCell>
+
+        <!-- ===================== StoreStatus (enum) ===================== -->
+        <mxCell id="clsStoreStatus" value="«enum» StoreStatus" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="440" y="300" width="180" height="101" as="geometry" />
+        </mxCell>
+        <mxCell id="clsStoreStatusAttr" value="PENDING&#10;ACTIVE&#10;SUSPENDED" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;strokeColor=none;fillColor=none;" vertex="1" parent="clsStoreStatus">
+          <mxGeometry y="26" width="180" height="75" as="geometry" />
+        </mxCell>
+
+        <!-- ===================== EmailVerificationToken ===================== -->
+        <mxCell id="clsEvt" value="EmailVerificationToken" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="420" y="440" width="250" height="161" as="geometry" />
+        </mxCell>
+        <mxCell id="clsEvtAttr" value="- id: Long&#10;- userId: Long&#10;- token: String&#10;- expiresAt: Instant&#10;- usedAt: Instant&#10;- createdAt: Instant" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;strokeColor=none;fillColor=none;" vertex="1" parent="clsEvt">
+          <mxGeometry y="26" width="250" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="clsEvtOps" value="+ isExpired(): boolean&#10;+ isUsed(): boolean&#10;+ setUsedAt(usedAt: Instant)" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;strokeColor=none;fillColor=none;" vertex="1" parent="clsEvt">
+          <mxGeometry y="116" width="250" height="45" as="geometry" />
+        </mxCell>
+
+        <!-- ===================== PasswordResetToken ===================== -->
+        <mxCell id="clsPrt" value="PasswordResetToken" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="420" y="640" width="250" height="161" as="geometry" />
+        </mxCell>
+        <mxCell id="clsPrtAttr" value="- id: Long&#10;- userId: Long&#10;- token: String&#10;- expiresAt: Instant&#10;- usedAt: Instant&#10;- createdAt: Instant" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;strokeColor=none;fillColor=none;" vertex="1" parent="clsPrt">
+          <mxGeometry y="26" width="250" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="clsPrtOps" value="+ isExpired(): boolean&#10;+ isUsed(): boolean&#10;+ setUsedAt(usedAt: Instant)" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;strokeColor=none;fillColor=none;" vertex="1" parent="clsPrt">
+          <mxGeometry y="116" width="250" height="45" as="geometry" />
+        </mxCell>
+
+        <!-- ===================== LoginAttempt ===================== -->
+        <mxCell id="clsLogin" value="LoginAttempt" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="420" y="840" width="260" height="191" as="geometry" />
+        </mxCell>
+        <mxCell id="clsLoginAttr" value="- id: Long&#10;- purpose: Purpose&#10;- email: String&#10;- ipAddress: String&#10;- userAgent: String&#10;- success: boolean&#10;- failedReason: String&#10;- createdAt: Instant" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;strokeColor=none;fillColor=none;" vertex="1" parent="clsLogin">
+          <mxGeometry y="26" width="260" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="clsLoginOps" value="+ isSuccess(): boolean&#10;+ getFailedReason(): String&#10;+ getPurpose(): Purpose" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;strokeColor=none;fillColor=none;" vertex="1" parent="clsLogin">
+          <mxGeometry y="146" width="260" height="45" as="geometry" />
+        </mxCell>
+
+        <!-- ===================== Purpose (enum) ===================== -->
+        <mxCell id="clsPurpose" value="«enum» Purpose" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="740" y="870" width="180" height="71" as="geometry" />
+        </mxCell>
+        <mxCell id="clsPurposeAttr" value="LOGIN&#10;EMAIL_SEND" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;strokeColor=none;fillColor=none;" vertex="1" parent="clsPurpose">
+          <mxGeometry y="26" width="180" height="45" as="geometry" />
+        </mxCell>
+
+        <!-- ===================== StoreDomain ===================== -->
+        <mxCell id="clsStoreDomain" value="StoreDomain" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="800" y="40" width="240" height="191" as="geometry" />
+        </mxCell>
+        <mxCell id="clsStoreDomainAttr" value="- id: Long&#10;- domain: String&#10;- primary: boolean&#10;- verified: boolean&#10;- createdAt: Instant&#10;- updatedAt: Instant" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;strokeColor=none;fillColor=none;" vertex="1" parent="clsStoreDomain">
+          <mxGeometry y="26" width="240" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="clsStoreDomainOps" value="+ isPrimary(): boolean&#10;+ setPrimary(primary: boolean)&#10;+ isVerified(): boolean&#10;+ setVerified(verified: boolean)&#10;+ getDomain(): String" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;strokeColor=none;fillColor=none;" vertex="1" parent="clsStoreDomain">
+          <mxGeometry y="116" width="240" height="75" as="geometry" />
+        </mxCell>
+
+        <!-- ===================== TenantEntity ===================== -->
+        <mxCell id="clsTenant" value="«abstract» TenantEntity&#10;@MappedSuperclass" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#000000;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="800" y="300" width="240" height="116" as="geometry" />
+        </mxCell>
+        <mxCell id="clsTenantAttr" value="- storeId: Long&#10;&#10;&#10;" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;strokeColor=none;fillColor=none;" vertex="1" parent="clsTenant">
+          <mxGeometry y="26" width="240" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="clsTenantOps" value="+ getStoreId(): Long&#10;+ setStoreId(storeId: Long)" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;strokeColor=none;fillColor=none;" vertex="1" parent="clsTenant">
+          <mxGeometry y="71" width="240" height="45" as="geometry" />
+        </mxCell>
+
+        <!-- ===================== Edges ===================== -->
+        <!-- User owns 0..* Store (association, via Store.owner) -->
+        <mxCell id="eUserStore" value="owner" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=open;endFill=0;strokeColor=#000000;" edge="1" parent="1" source="clsUser" target="clsStore">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eUserStoreMult" value="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="eUserStore">
+          <mxGeometry x="0.1" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eUserStoreMult2" value="0..*" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="eUserStore">
+          <mxGeometry x="0.85" relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- AppUser wraps User -->
+        <mxCell id="eAppUserUser" value="wraps" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;dashed=1;endArrow=open;endFill=0;strokeColor=#000000;" edge="1" parent="1" source="clsAppUser" target="clsUser">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- AppUser realizes UserDetails (hollow triangle) -->
+        <mxCell id="eAppUserUDS" value="implements" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=block;endFill=0;startArrow=none;dashed=1;strokeColor=#9673a6;" edge="1" parent="1" source="clsAppUser" target="clsUserDetails">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Store has 0..* StoreDomain (FK store_id, no JPA relation) -->
+        <mxCell id="eStoreDomain" value="store_id (FK)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;dashed=1;endArrow=open;endFill=0;strokeColor=#000000;" edge="1" parent="1" source="clsStore" target="clsStoreDomain">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eStoreDomainMult" value="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="eStoreDomain">
+          <mxGeometry x="0.1" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eStoreDomainMult2" value="0..*" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="eStoreDomain">
+          <mxGeometry x="0.85" relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- StoreDomain extends TenantEntity (generalization) -->
+        <mxCell id="eStoreDomainTenant" value="extends" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;endArrow=block;endFill=0;startArrow=none;strokeColor=#000000;" edge="1" parent="1" source="clsStoreDomain" target="clsTenant">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- User has 0..* EmailVerificationToken (FK userId) -->
+        <mxCell id="eUserEvt" value="userId (FK)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.9;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0;entryDx=0;entryDy=0;dashed=1;endArrow=open;endFill=0;strokeColor=#000000;" edge="1" parent="1" source="clsUser" target="clsEvt">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eUserEvtMult" value="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="eUserEvt">
+          <mxGeometry x="0.1" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eUserEvtMult2" value="0..*" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="eUserEvt">
+          <mxGeometry x="0.9" relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- User has 0..* PasswordResetToken (FK userId) -->
+        <mxCell id="eUserPrt" value="userId (FK)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.7;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0;entryDx=0;entryDy=0;dashed=1;endArrow=open;endFill=0;strokeColor=#000000;" edge="1" parent="1" source="clsUser" target="clsPrt">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eUserPrtMult" value="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="eUserPrt">
+          <mxGeometry x="0.1" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eUserPrtMult2" value="0..*" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="eUserPrt">
+          <mxGeometry x="0.9" relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- User has 0..* LoginAttempt (by email) -->
+        <mxCell id="eUserLogin" value="by email" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;dashed=1;endArrow=open;endFill=0;strokeColor=#000000;" edge="1" parent="1" source="clsUser" target="clsLogin">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eUserLoginMult" value="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="eUserLogin">
+          <mxGeometry x="0.1" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eUserLoginMult2" value="0..*" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="eUserLogin">
+          <mxGeometry x="0.9" relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Title -->
+        <mxCell id="title1" value="MeethybridHub — Domain Model (JPA entities)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="350" y="0" width="600" height="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
