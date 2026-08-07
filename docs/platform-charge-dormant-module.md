@@ -1,7 +1,8 @@
 # Dormant Platform-Charge Module — Handoff Notes
 
-> **Status:** DESIGN AGREED — NOT IMPLEMENTED. This doc is the memory for resuming
-> the work. Nothing for this feature has been written to `src/` yet (only this file).
+> **Status:** IMPLEMENTED (dormant) — Aug 7, 2026. The module now lives in
+> `src/main/java/com/meethybridhub/billing/` behind `PLATFORM_CHARGE_ENABLED=false`.
+> This doc remains the memory for **waking it up** (see "Wake-up instructions").
 
 ## What was asked
 
@@ -40,10 +41,11 @@ charge**, behind the scenes. It must **sleep until activated**.
   test work). `cli.py` contains a hardcoded API key — **never commit it** (stays
   untracked). `venv/` is gitignored.
 
-## Implementation blueprint (ready to execute)
+## Implementation blueprint (executed Aug 7, 2026)
 
 ### New files
-1. `src/main/resources/db/migration/V7__platform_charges.sql`
+1. `src/main/resources/db/migration/V8__platform_charges.sql` — V7 was taken by
+   the audit-log IP change, so the table landed as **V8**:
    - `platform_charges` table: `id BIGSERIAL PK`, `transaction_ref VARCHAR(100) NOT NULL UNIQUE`,
      `transaction_amount NUMERIC(12,2) NOT NULL`, `charge_amount NUMERIC(12,2) NOT NULL`,
      `currency VARCHAR(3) NOT NULL DEFAULT 'NGN'`, `status VARCHAR(20) NOT NULL DEFAULT 'PENDING'`
@@ -74,7 +76,9 @@ charge**, behind the scenes. It must **sleep until activated**.
    - `isEnabled()` both ways
 
 ### Edits
-8. `src/main/resources/application.yml` — add block (and mirror in `application-test.yml` if needed):
+8. ✅ `src/main/resources/application.yml` — block added (no `application-test.yml`
+   mirror needed: defaults are dormant and unit tests set fields via
+   `ReflectionTestUtils`):
    ```yaml
    platform-charge:
      enabled: ${PLATFORM_CHARGE_ENABLED:false}
@@ -82,8 +86,16 @@ charge**, behind the scenes. It must **sleep until activated**.
      currency: ${PLATFORM_CHARGE_CURRENCY:NGN}
      sweep-cron: ${PLATFORM_CHARGE_SWEEP_CRON:0 0 3 * * *}
    ```
-9. `pom.xml` — add JaCoCo PACKAGE rule: `com.meethybridhub.billing*` ≥ 80% line / 55% branch.
-10. `README.md` — optional short "Dormant features" section documenting the switch.
+9. ✅ `pom.xml` — JaCoCo PACKAGE rule added: `com.meethybridhub.billing*` ≥ 80% line / 55% branch.
+10. ⏭️ `README.md` — "Dormant features" section deliberately deferred (avoids
+   colliding with the open README PR); add when the module is woken up.
+
+### Extra (added during implementation)
+- `identity/AuditEventType` gained `PLATFORM_CHARGE_RECORDED`; successful charges
+  are recorded to the audit trail via `AuditLogService` (billing → identity).
+- `charge()` catches `DataIntegrityViolationException` from the unique
+  `transaction_ref` as the concurrency-safe idempotency guard (exists-then-save
+  alone has a race).
 
 ### Wake-up instructions (for ops)
 Set `PLATFORM_CHARGE_ENABLED=true` + `PLATFORM_CHARGE_FLAT_FEE=<amount>` in prod env
