@@ -28,7 +28,7 @@ import java.util.Map;
  *   POST /api/v1/auth/register   - Create new user account
  *   POST /api/v1/auth/login      - Authenticate and get tokens
  *   POST /api/v1/auth/refresh    - Refresh access token
- *   POST /api/v1/auth/logout     - Invalidate refresh token (client-side)
+ *   POST /api/v1/auth/logout     - Revoke refresh token (server-side denylist)
  *   GET  /api/v1/auth/verify     - Verify email with token
  *   POST /api/v1/auth/reset-password - Request password reset
  *   POST /api/v1/auth/reset-password/confirm - Confirm password reset
@@ -49,6 +49,7 @@ public class AuthController {
     private final LoginAttemptService loginAttemptService;
     private final AuditLogService auditLogService;
     private final ClientIpResolver clientIpResolver;
+    private final TokenRevocationService tokenRevocationService;
 
     public AuthController(
             AuthenticationManager authenticationManager,
@@ -57,7 +58,8 @@ public class AuthController {
             StoreService storeService,
             LoginAttemptService loginAttemptService,
             AuditLogService auditLogService,
-            ClientIpResolver clientIpResolver) {
+            ClientIpResolver clientIpResolver,
+            TokenRevocationService tokenRevocationService) {
         this.authenticationManager = authenticationManager;
         this.userService = userService;
         this.jwtService = jwtService;
@@ -65,6 +67,7 @@ public class AuthController {
         this.loginAttemptService = loginAttemptService;
         this.auditLogService = auditLogService;
         this.clientIpResolver = clientIpResolver;
+        this.tokenRevocationService = tokenRevocationService;
     }
 
     /**
@@ -142,7 +145,8 @@ public class AuthController {
             UserDetails userDetails = userService.loadUserByUsername(username);
 
             if (!jwtService.validateToken(request.refreshToken(), userDetails)
-                    || !jwtService.passwordVersionMatches(request.refreshToken(), userDetails)) {
+                    || !jwtService.passwordVersionMatches(request.refreshToken(), userDetails)
+                    || tokenRevocationService.isRevoked(request.refreshToken())) {
                 throw new UnauthorizedException("Invalid refresh token");
             }
 
@@ -157,6 +161,27 @@ public class AuthController {
             // Catch any JWT parsing errors
             throw new UnauthorizedException("Invalid refresh token");
         }
+    }
+
+    /**
+     * Log out: revoke the presented refresh token server-side so {@code /refresh}
+     * rejects it. The access token expires naturally (24h TTL) — see
+     * {@link TokenRevocationService}. Idempotent and always returns 200, even
+     * for unknown/expired tokens (no information leakage about token validity).
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<Map<String, String>> logout(
+            @RequestBody(required = false) LogoutRequest request,
+            HttpServletRequest httpRequest) {
+
+        if (request != null && request.refreshToken() != null && !request.refreshToken().isBlank()) {
+            Long userId = resolveUserId(request.refreshToken());
+            tokenRevocationService.revoke(request.refreshToken(), userId);
+            auditLogService.record(userId, AuditEventType.LOGOUT,
+                    "User logged out (refresh token revoked)",
+                    clientIpResolver.resolve(httpRequest), httpRequest.getHeader("User-Agent"));
+        }
+        return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
     }
 
     /**
@@ -245,6 +270,14 @@ public class AuthController {
             String refreshToken
     ) {}
 
+    /**
+     * Logout request body. The refresh token is optional: logout is idempotent
+     * and succeeds even when the client has already discarded its tokens.
+     */
+    public record LogoutRequest(
+            String refreshToken
+    ) {}
+
     public record ResetPasswordRequest(
             @ValidEmail
             String email
@@ -279,5 +312,15 @@ public class AuthController {
         storeService.findActiveStoreIdForOwner(userId)
                 .ifPresent(storeId -> claims.put(JwtService.CLAIM_STORE_ID, storeId));
         return claims;
+    }
+
+    /** Best-effort user id from a refresh token, null when unresolvable. */
+    private Long resolveUserId(String token) {
+        try {
+            UserDetails userDetails = userService.loadUserByUsername(jwtService.extractUsername(token));
+            return ((AppUser) userDetails).getUser().getId();
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

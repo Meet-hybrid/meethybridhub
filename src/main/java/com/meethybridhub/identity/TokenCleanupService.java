@@ -25,17 +25,21 @@ public class TokenCleanupService {
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final LoginAttemptRepository loginAttemptRepository;
+    private final RevokedTokenRepository revokedTokenRepository;
 
     public TokenCleanupService(EmailVerificationTokenRepository emailVerificationTokenRepository,
                                PasswordResetTokenRepository passwordResetTokenRepository,
-                               LoginAttemptRepository loginAttemptRepository) {
+                               LoginAttemptRepository loginAttemptRepository,
+                               RevokedTokenRepository revokedTokenRepository) {
         this.emailVerificationTokenRepository = emailVerificationTokenRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.loginAttemptRepository = loginAttemptRepository;
+        this.revokedTokenRepository = revokedTokenRepository;
     }
 
     /**
-     * Purge expired tokens and stale login attempts.
+     * Purge expired tokens, revoked tokens past their natural expiry, and
+     * stale login attempts.
      */
     @Scheduled(cron = "${app.token-cleanup.cron:0 0 3 * * *}")
     @Transactional
@@ -44,14 +48,15 @@ public class TokenCleanupService {
 
         int expiredVerification = emailVerificationTokenRepository.deleteExpired(now);
         int expiredReset = passwordResetTokenRepository.deleteExpired(now);
+        long expiredRevoked = revokedTokenRepository.deleteByExpiresAtBefore(now);
         int staleLoginAttempts = loginAttemptRepository.deleteBefore(
                 now.minus(LOGIN_ATTEMPT_RETENTION_HOURS, ChronoUnit.HOURS));
 
-        int total = expiredVerification + expiredReset + staleLoginAttempts;
+        long total = expiredVerification + expiredReset + expiredRevoked + staleLoginAttempts;
         if (total > 0) {
             log.info("Cleanup: deleted {} expired verification tokens, {} expired reset tokens, "
-                            + "{} stale login attempts",
-                    expiredVerification, expiredReset, staleLoginAttempts);
+                            + "{} expired revoked tokens, {} stale login attempts",
+                    expiredVerification, expiredReset, expiredRevoked, staleLoginAttempts);
         }
     }
 }
