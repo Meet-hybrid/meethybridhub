@@ -69,6 +69,7 @@ public class StoreFilter extends OncePerRequestFilter {
                 || path.equals("/api/v1/auth/login")
                 || path.equals("/api/v1/auth/register")
                 || path.equals("/api/v1/auth/refresh")
+                || path.equals("/api/v1/auth/logout")
                 || path.equals("/api/v1/auth/verify")
                 || path.startsWith("/api/v1/auth/reset-password");
     }

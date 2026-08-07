@@ -9,6 +9,7 @@ import com.meethybridhub.identity.User;
 import com.meethybridhub.identity.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,15 +35,18 @@ public class StoreService {
 
     private final StoreRepository storeRepository;
     private final StoreDomainRepository storeDomainRepository;
+    private final StoreSettingsRepository storeSettingsRepository;
     private final UserRepository userRepository;
     private final AuditLogService auditLogService;
 
     public StoreService(StoreRepository storeRepository,
                         StoreDomainRepository storeDomainRepository,
+                        StoreSettingsRepository storeSettingsRepository,
                         UserRepository userRepository,
                         AuditLogService auditLogService) {
         this.storeRepository = storeRepository;
         this.storeDomainRepository = storeDomainRepository;
+        this.storeSettingsRepository = storeSettingsRepository;
         this.userRepository = userRepository;
         this.auditLogService = auditLogService;
     }
@@ -114,6 +118,69 @@ public class StoreService {
         StoreDomain saved = storeDomainRepository.save(
                 new StoreDomain(store.getId(), normalized, isFirst, false));
         log.info("Domain {} added to store {}", saved.getDomain(), store.getSlug());
+        return saved;
+    }
+
+    /**
+     * Branding/settings of the current tenant store, created lazily on first
+     * access with defaults so a new store always has valid branding.
+     *
+     * Race-safe: two concurrent first GETs both miss in {@code findByStoreId},
+     * and one loses the unique {@code store_id} constraint — caught below and
+     * turned into a re-query (same guard as PlatformChargeService).
+     */
+    public StoreSettings getSettingsForCurrentTenant(User user) {
+        Store store = getCurrentTenantStore(user);
+        return findOrCreateSettings(store.getId());
+    }
+
+    private StoreSettings findOrCreateSettings(Long storeId) {
+        return storeSettingsRepository.findByStoreId(storeId)
+                .orElseGet(() -> {
+                    try {
+                        return storeSettingsRepository.save(new StoreSettings(storeId));
+                    } catch (DataIntegrityViolationException e) {
+                        // Lost the find-then-save race; the unique store_id is
+                        // the real guard. Re-query the winner's row.
+                        return storeSettingsRepository.findByStoreId(storeId)
+                                .orElseThrow(() -> new IllegalStateException(
+                                        "Store settings vanished after concurrent creation: " + storeId));
+                    }
+                });
+    }
+
+    /**
+     * Update the branding/settings of the current tenant store. Only fields
+     * present in the request change; the rest keep their current values.
+     * Changes are recorded in the audit trail.
+     */
+    public StoreSettings updateSettingsForCurrentTenant(User user, StoreSettingsUpdate update) {
+        Store store = getCurrentTenantStore(user);
+        StoreSettings settings = storeSettingsRepository.findByStoreId(store.getId())
+                .orElseGet(() -> new StoreSettings(store.getId()));
+
+        if (update.logoUrl() != null) {
+            settings.setLogoUrl(blankToNull(update.logoUrl()));
+        }
+        if (update.primaryColor() != null) {
+            settings.setPrimaryColor(update.primaryColor().trim());
+        }
+        if (update.accentColor() != null) {
+            settings.setAccentColor(update.accentColor().trim());
+        }
+        if (update.theme() != null) {
+            settings.setTheme(update.theme());
+        }
+        if (update.tagline() != null) {
+            settings.setTagline(blankToNull(update.tagline()));
+        }
+        if (update.contactEmail() != null) {
+            settings.setContactEmail(blankToNull(update.contactEmail()));
+        }
+
+        StoreSettings saved = storeSettingsRepository.save(settings);
+        auditLogService.record(user.getId(), AuditEventType.STORE_SETTINGS_UPDATED,
+                "Store " + store.getSlug() + " branding/settings updated", null, null);
         return saved;
     }
 

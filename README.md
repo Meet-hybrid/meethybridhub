@@ -22,7 +22,7 @@ feature.
 | Build | Maven + Maven Wrapper (no global install needed) |
 | CI | GitHub Actions (`.github/workflows/ci.yml`) |
 | Tests | JUnit 5, MockMvc, H2 (Testcontainers when we hit Postgres-only SQL) |
-| Coverage | JaCoCo — line ≥ 80%, branch ≥ 55% enforced in `verify`; history & badge via Codecov (as of Aug 2026: 91% / 70%) |
+| Coverage | JaCoCo — line ≥ 80%, branch ≥ 55% enforced in `verify`; history & badge via Codecov (as of Aug 2026: 91% / 74%) |
 
 ## Quickstart
 
@@ -93,14 +93,15 @@ src/main/java/com/meethybridhub/
 ├── api/ping/                       # smoke-test endpoint
 ├── identity/                       # users, JWT auth, email verification,
 │                                   # password reset, RBAC, rate limiting,
-│                                   # security audit trail (audit_log)
+│                                   # security audit trail (audit_log),
+│                                   # server-side logout (revoked_tokens)
 └── store/                          # multi-tenancy: stores, domains,
                                     # StoreFilter, TenantContext, TenantEntity,
-                                    # admin store management
+                                    # admin store management, branding/settings
 src/main/resources/
 ├── application.yml                 # main config (env-var driven)
 ├── application-test.yml            # H2 test profile
-└── db/migration/                   # Flyway migrations (V2–V7)
+└── db/migration/                   # Flyway migrations (V2–V10)
 src/test/java/com/meethybridhub/
 └── (integration + unit tests, H2-backed)
 ```
@@ -148,6 +149,10 @@ Every request passes through two custom servlet filters (wired in
 
 - JWT **access** (24h) + **refresh** (30d) tokens; `storeId` and password-version
   claims.
+- **Server-side logout** — `POST /auth/logout` revokes the refresh token via a
+  `revoked_tokens` denylist (only SHA-256 hashes stored); `/refresh` rejects
+  revoked tokens. Access tokens expire naturally (24h), keeping the stateless
+  design free of per-request DB lookups.
 - **BCrypt** password hashing; roles stored on the user (`CUSTOMER`,
   `STORE_OWNER`, `ADMIN`) with `@PreAuthorize` method security.
 - Email verification with expiring tokens; password reset with short-lived tokens.
@@ -171,6 +176,7 @@ Base path: `/api/v1` · Interactive docs at `/swagger-ui.html` (JWT bearer auth)
 | POST | `/auth/register` | Create account (+ email verification) | Public |
 | POST | `/auth/login` | Authenticate → access + refresh tokens | Public |
 | POST | `/auth/refresh` | Rotate refresh token | Public |
+| POST | `/auth/logout` | Revoke refresh token (server-side denylist) | Public |
 | GET | `/auth/verify` | Verify email (token query param) | Public |
 | POST | `/auth/resend-verification` | Resend verification email | Public |
 | POST | `/auth/reset-password` | Request password reset (email) | Public |
@@ -190,6 +196,8 @@ Base path: `/api/v1` · Interactive docs at `/swagger-ui.html` (JWT bearer auth)
 | GET | `/stores/me` | Current tenant store | Owner/`ADMIN` |
 | GET | `/stores/me/domains` | Store domains | Owner/`ADMIN` |
 | POST | `/stores/me/domains` | Register a domain | Owner/`ADMIN` |
+| GET | `/stores/me/settings` | Store branding/settings | Owner/`ADMIN` |
+| PUT | `/stores/me/settings` | Update branding (logo, colors, theme) | Owner/`ADMIN` |
 
 > **New endpoints are public by default** unless they match a URL rule in
 > `SecurityConfig` or carry `@PreAuthorize` — add one of the two when introducing
@@ -209,6 +217,8 @@ the app refuses to start if entities drift from the DB.
 | `V5__login_attempts_ip_to_varchar.sql` | IP column type alignment |
 | `V6__login_attempts_add_purpose.sql` | Purpose column (login vs. email-send counters) |
 | `V7__audit_log_ip_to_varchar.sql` | IP column type alignment (`audit_log`) |
+| `V9__store_settings.sql` | `store_settings` — branding (logo, colors, theme, tagline) |
+| `V10__revoked_tokens.sql` | `revoked_tokens` — server-side logout denylist |
 
 ## Locked decisions (so far)
 
@@ -257,9 +267,9 @@ pull request. The badge above reflects the latest run on `main`.
 | Upload to Codecov | `codecov-action` uploads `jacoco.xml` → coverage history, README badge, PR comments (status checks in `codecov.yml`) |
 
 - **One run per ref** — a new push cancels the stale in-progress run.
-- These are the same tests you run locally: `./mvnw test` (121 tests, H2 in-memory).
+- These are the same tests you run locally: `./mvnw test` (148 tests, H2 in-memory).
 - **Coverage floor**: `./mvnw verify` fails if line coverage drops below 80% or branch below
-  55% (thresholds in `pom.xml`; as of Aug 2026 the suite measures 90.8% line / 69.6% branch). View
+  55% (thresholds in `pom.xml`; as of Aug 2026 the suite measures 91.2% line / 74.1% branch). View
   the full report locally by opening `target/site/jacoco/index.html` after a `verify`.
 - **Codecov** ([codecov.io/gh/Meet-hybrid/meethybridhub](https://codecov.io/gh/Meet-hybrid/meethybridhub))
   tracks coverage over time and posts a comment on PRs. Tokenless upload works for public
@@ -270,7 +280,7 @@ pull request. The badge above reflects the latest run on `main`.
 
 1. Foundations ✅
 2. Identity — JWT auth, users, roles, email verification, rate limiting ✅
-3. Tenancy + stores — store registration, subdomain resolution, admin management ✅; branding 🔄
+3. Tenancy + stores — store registration, subdomain resolution, admin management, branding/settings ✅
 4. Catalog — categories, products, inventory, reviews
 5. Orders + payments — Korapay, webhooks, idempotency, **installments**
 6. Custom orders — request → quote → order workflow
