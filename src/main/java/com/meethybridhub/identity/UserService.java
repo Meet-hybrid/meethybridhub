@@ -50,6 +50,7 @@ public class UserService {
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final EmailService emailService;
+    private final AuditLogService auditLogService;
 
     public UserService(
             UserRepository userRepository,
@@ -57,13 +58,15 @@ public class UserService {
             UserDetailsService userDetailsService,
             EmailVerificationTokenRepository emailVerificationTokenRepository,
             PasswordResetTokenRepository passwordResetTokenRepository,
-            EmailService emailService) {
+            EmailService emailService,
+            AuditLogService auditLogService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.userDetailsService = userDetailsService;
         this.emailVerificationTokenRepository = emailVerificationTokenRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.emailService = emailService;
+        this.auditLogService = auditLogService;
     }
 
     /**
@@ -113,6 +116,8 @@ public class UserService {
 
         log.info("User registered: {} (ID: {}), verification email queued",
                 savedUser.getEmail(), savedUser.getId());
+        auditLogService.record(savedUser.getId(), AuditEventType.REGISTER,
+                "User registered: " + savedUser.getEmail(), null, null);
 
         return savedUser;
     }
@@ -144,6 +149,8 @@ public class UserService {
         verificationToken.setUsedAt(Instant.now());
         emailVerificationTokenRepository.save(verificationToken);
 
+        auditLogService.record(user.getId(), AuditEventType.EMAIL_VERIFIED,
+                "Email verified for user: " + user.getEmail(), null, null);
         log.info("Email verified for user: {}", user.getEmail());
     }
 
@@ -261,6 +268,8 @@ public class UserService {
         resetToken.setUsedAt(Instant.now());
         passwordResetTokenRepository.save(resetToken);
 
+        auditLogService.record(user.getId(), AuditEventType.PASSWORD_RESET_CONFIRMED,
+                "Password reset confirmed for user: " + user.getEmail(), null, null);
         log.info("Password reset confirmed for user: {}", user.getEmail());
     }
 
@@ -358,7 +367,9 @@ public class UserService {
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         user.bumpPasswordVersion(); // invalidates all previously issued JWTs
         userRepository.save(user);
-        
+
+        auditLogService.record(userId, AuditEventType.PASSWORD_CHANGED,
+                "Password changed for user ID: " + userId, null, null);
         log.info("Password changed for user ID: {}", userId);
     }
 

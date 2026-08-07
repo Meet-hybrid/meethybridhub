@@ -22,4 +22,7 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
     Optional<Store> findByOwnerIdAndStatus(Long ownerId, StoreStatus status);
 
     List<Store> findByOwnerId(Long ownerId);
+
+    /** All stores in a given lifecycle state (admin store management). */
+    List<Store> findByStatus(StoreStatus status);
 }
