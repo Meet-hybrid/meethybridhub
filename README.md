@@ -22,7 +22,7 @@ feature.
 | Build | Maven + Maven Wrapper (no global install needed) |
 | CI | GitHub Actions (`.github/workflows/ci.yml`) |
 | Tests | JUnit 5, MockMvc, H2 (Testcontainers when we hit Postgres-only SQL) |
-| Coverage | JaCoCo — line ≥ 80%, branch ≥ 55% enforced in `verify`; history & badge via Codecov (as of Aug 2026: 84% / 62%) |
+| Coverage | JaCoCo — line ≥ 80%, branch ≥ 55% enforced in `verify`; history & badge via Codecov (as of Aug 2026: 91% / 70%) |
 
 ## Quickstart
 
@@ -92,13 +92,15 @@ src/main/java/com/meethybridhub/
 ├── common/exception/               # domain exceptions (400, 401, 403, 404, 429)
 ├── api/ping/                       # smoke-test endpoint
 ├── identity/                       # users, JWT auth, email verification,
-│                                   # password reset, RBAC, rate limiting
+│                                   # password reset, RBAC, rate limiting,
+│                                   # security audit trail (audit_log)
 └── store/                          # multi-tenancy: stores, domains,
-                                    # StoreFilter, TenantContext, TenantEntity
+                                    # StoreFilter, TenantContext, TenantEntity,
+                                    # admin store management
 src/main/resources/
 ├── application.yml                 # main config (env-var driven)
 ├── application-test.yml            # H2 test profile
-└── db/migration/                   # Flyway migrations (V2–V6)
+└── db/migration/                   # Flyway migrations (V2–V7)
 src/test/java/com/meethybridhub/
 └── (integration + unit tests, H2-backed)
 ```
@@ -152,6 +154,12 @@ Every request passes through two custom servlet filters (wired in
 - Defense in depth: login rate limiting + account lockout (per email/IP, windowed),
   email-flood protection on resend-verification/reset-password, and a scheduled
   `TokenCleanupService` purging expired tokens.
+- **Security audit trail** — every security-relevant event (registration, login
+  success/failure, email verification, password changes, admin actions, store
+  lifecycle) is appended to the `audit_log` table via `AuditLogService`
+  (best-effort writes that join the caller's transaction, keeping the `user_id`
+  FK valid). `ClientIpResolver` captures the client IP for auth + admin events,
+  honoring the `AUTH_TRUST_FORWARDED_HEADER` setting.
 
 ## API
 
@@ -176,6 +184,8 @@ Base path: `/api/v1` · Interactive docs at `/swagger-ui.html` (JWT bearer auth)
 | PUT | `/admin/users/{id}/roles` | Change roles | `ADMIN` |
 | PUT | `/admin/users/{id}/status` | Suspend/activate | `ADMIN` |
 | DELETE | `/admin/users/{id}` | Delete user | `ADMIN` |
+| GET | `/admin/stores` | List stores (filter by `?status=`) | `ADMIN` |
+| PUT | `/admin/stores/{id}/status` | Suspend/activate a store | `ADMIN` |
 | POST | `/stores` | Register a store (grants `STORE_OWNER`) | Authenticated |
 | GET | `/stores/me` | Current tenant store | Owner/`ADMIN` |
 | GET | `/stores/me/domains` | Store domains | Owner/`ADMIN` |
@@ -198,6 +208,7 @@ the app refuses to start if entities drift from the DB.
 | `V4__add_password_version.sql` | Password-version column (token invalidation on password change) |
 | `V5__login_attempts_ip_to_varchar.sql` | IP column type alignment |
 | `V6__login_attempts_add_purpose.sql` | Purpose column (login vs. email-send counters) |
+| `V7__audit_log_ip_to_varchar.sql` | IP column type alignment (`audit_log`) |
 
 ## Locked decisions (so far)
 
@@ -246,9 +257,9 @@ pull request. The badge above reflects the latest run on `main`.
 | Upload to Codecov | `codecov-action` uploads `jacoco.xml` → coverage history, README badge, PR comments (status checks in `codecov.yml`) |
 
 - **One run per ref** — a new push cancels the stale in-progress run.
-- These are the same tests you run locally: `./mvnw test` (58 tests, H2 in-memory).
+- These are the same tests you run locally: `./mvnw test` (121 tests, H2 in-memory).
 - **Coverage floor**: `./mvnw verify` fails if line coverage drops below 80% or branch below
-  55% (thresholds in `pom.xml`; as of Aug 2026 the suite measures 84% line / 62% branch). View
+  55% (thresholds in `pom.xml`; as of Aug 2026 the suite measures 90.8% line / 69.6% branch). View
   the full report locally by opening `target/site/jacoco/index.html` after a `verify`.
 - **Codecov** ([codecov.io/gh/Meet-hybrid/meethybridhub](https://codecov.io/gh/Meet-hybrid/meethybridhub))
   tracks coverage over time and posts a comment on PRs. Tokenless upload works for public
@@ -259,11 +270,11 @@ pull request. The badge above reflects the latest run on `main`.
 
 1. Foundations ✅
 2. Identity — JWT auth, users, roles, email verification, rate limiting ✅
-3. Tenancy + stores — store registration, subdomain resolution, branding 🔄 (core done)
+3. Tenancy + stores — store registration, subdomain resolution, admin management ✅; branding 🔄
 4. Catalog — categories, products, inventory, reviews
 5. Orders + payments — Korapay, webhooks, idempotency, **installments**
 6. Custom orders — request → quote → order workflow
 7. Discovery — featured/recommended stores
-8. Admin + analytics — reports, commissions, disputes
+8. Admin + analytics — user & store management ✅; reports, commissions, disputes
 9. Hardening — Redis caching, queues, observability
 10. Deploy — Docker, Flyway migrations, backups
