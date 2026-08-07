@@ -47,7 +47,7 @@ class LoginRateLimitIntegrationTest {
     private LoginAttemptRepository loginAttemptRepository;
 
     @Autowired
-    private AuthController authController;
+    private ClientIpResolver clientIpResolver;
 
     @Test
     void failedAndSuccessfulAttemptsAreRecorded() throws Exception {
@@ -166,7 +166,7 @@ class LoginRateLimitIntegrationTest {
     void forwardedHeaderIsHonoredWhenTrusted() throws Exception {
         // Opt-in path: flip the trust flag on this context's singleton, run the
         // scenario, and restore it — so the shared context is left untouched.
-        ReflectionTestUtils.setField(authController, "trustForwardedHeader", true);
+        ReflectionTestUtils.setField(clientIpResolver, "trustForwardedHeader", true);
         try {
             for (int i = 0; i < 5; i++) {
                 mockMvc.perform(post("/api/v1/auth/login")
@@ -183,7 +183,7 @@ class LoginRateLimitIntegrationTest {
                             .content("{\"email\": \"trusted-5@example.com\", \"password\": \"" + WRONG_PASSWORD + "\"}"))
                     .andExpect(status().isTooManyRequests());
         } finally {
-            ReflectionTestUtils.setField(authController, "trustForwardedHeader", false);
+            ReflectionTestUtils.setField(clientIpResolver, "trustForwardedHeader", false);
         }
     }
 

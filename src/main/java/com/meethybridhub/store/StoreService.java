@@ -3,6 +3,8 @@ package com.meethybridhub.store;
 import com.meethybridhub.common.exception.BadRequestException;
 import com.meethybridhub.common.exception.ForbiddenException;
 import com.meethybridhub.common.exception.ResourceNotFoundException;
+import com.meethybridhub.identity.AuditEventType;
+import com.meethybridhub.identity.AuditLogService;
 import com.meethybridhub.identity.User;
 import com.meethybridhub.identity.UserRepository;
 import org.slf4j.Logger;
@@ -10,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -32,13 +35,16 @@ public class StoreService {
     private final StoreRepository storeRepository;
     private final StoreDomainRepository storeDomainRepository;
     private final UserRepository userRepository;
+    private final AuditLogService auditLogService;
 
     public StoreService(StoreRepository storeRepository,
                         StoreDomainRepository storeDomainRepository,
-                        UserRepository userRepository) {
+                        UserRepository userRepository,
+                        AuditLogService auditLogService) {
         this.storeRepository = storeRepository;
         this.storeDomainRepository = storeDomainRepository;
         this.userRepository = userRepository;
+        this.auditLogService = auditLogService;
     }
 
     /**
@@ -58,6 +64,8 @@ public class StoreService {
         }
 
         log.info("Store created: {} (slug: {}, owner: {})", saved.getName(), saved.getSlug(), owner.getEmail());
+        auditLogService.record(owner.getId(), AuditEventType.STORE_CREATED,
+                "Store created: " + saved.getSlug(), null, null);
         return saved;
     }
 
@@ -106,6 +114,39 @@ public class StoreService {
         StoreDomain saved = storeDomainRepository.save(
                 new StoreDomain(store.getId(), normalized, isFirst, false));
         log.info("Domain {} added to store {}", saved.getDomain(), store.getSlug());
+        return saved;
+    }
+
+    /**
+     * List all stores, optionally filtered by status (admin only).
+     *
+     * @throws BadRequestException for an unknown status value
+     */
+    public List<Store> listStores(String status) {
+        if (status != null && !status.isBlank()) {
+            try {
+                return storeRepository.findByStatus(StoreStatus.valueOf(status.trim().toUpperCase(Locale.ROOT)));
+            } catch (IllegalArgumentException e) {
+                throw new BadRequestException("Unknown status: " + status
+                        + ". Valid values: " + Arrays.toString(StoreStatus.values()));
+            }
+        }
+        return storeRepository.findAll();
+    }
+
+    /**
+     * Set a store's lifecycle status (admin only). The acting admin is recorded
+     * in the audit trail so status changes are attributable.
+     */
+    public Store updateStoreStatus(Long actorUserId, Long storeId, StoreStatus status) {
+        Store store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Store not found: " + storeId));
+        StoreStatus previous = store.getStatus();
+        store.setStatus(status);
+        Store saved = storeRepository.save(store);
+        auditLogService.record(actorUserId, AuditEventType.STORE_STATUS_UPDATED,
+                "Store " + storeId + " (" + saved.getSlug() + ") status changed from " + previous + " to " + status,
+                null, null);
         return saved;
     }
 
