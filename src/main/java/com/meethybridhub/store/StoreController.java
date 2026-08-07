@@ -79,6 +79,23 @@ public class StoreController {
         return ResponseEntity.status(HttpStatus.CREATED).body(DomainResponse.from(domain));
     }
 
+    @GetMapping("/me/settings")
+    @PreAuthorize("hasAnyRole('STORE_OWNER', 'ADMIN')")
+    public ResponseEntity<StoreSettingsResponse> getMySettings(@AuthenticationPrincipal UserDetails userDetails) {
+        User user = userService.getUserByEmail(userDetails.getUsername());
+        return ResponseEntity.ok(StoreSettingsResponse.from(storeService.getSettingsForCurrentTenant(user)));
+    }
+
+    @PutMapping("/me/settings")
+    @PreAuthorize("hasAnyRole('STORE_OWNER', 'ADMIN')")
+    public ResponseEntity<StoreSettingsResponse> updateMySettings(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody StoreSettingsUpdate request) {
+
+        User user = userService.getUserByEmail(userDetails.getUsername());
+        return ResponseEntity.ok(StoreSettingsResponse.from(storeService.updateSettingsForCurrentTenant(user, request)));
+    }
+
     // Request/Response records
 
     public record CreateStoreRequest(
@@ -116,6 +133,32 @@ public class StoreController {
                     store.getStatus(),
                     store.getOwner().getEmail(),
                     store.getCreatedAt()
+            );
+        }
+    }
+
+    public record StoreSettingsResponse(
+            Long id,
+            Long storeId,
+            String logoUrl,
+            String primaryColor,
+            String accentColor,
+            StoreTheme theme,
+            String tagline,
+            String contactEmail,
+            Instant updatedAt
+    ) {
+        public static StoreSettingsResponse from(StoreSettings settings) {
+            return new StoreSettingsResponse(
+                    settings.getId(),
+                    settings.getStoreId(),
+                    settings.getLogoUrl(),
+                    settings.getPrimaryColor(),
+                    settings.getAccentColor(),
+                    settings.getTheme(),
+                    settings.getTagline(),
+                    settings.getContactEmail(),
+                    settings.getUpdatedAt()
             );
         }
     }
