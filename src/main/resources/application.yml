@@ -68,6 +68,10 @@ jwt:
 store:
   base-domain: ${STORE_BASE_DOMAIN:meethybridhub.com}
 
+# Payment provider webhook verification. Replace the local default in production.
+payment:
+  webhook-secret: ${PAYMENT_WEBHOOK_SECRET:dev-webhook-secret}
+
 # Public base URL used to build verification links in emails.
 app:
   base-url: ${APP_BASE_URL:http://localhost:8080}

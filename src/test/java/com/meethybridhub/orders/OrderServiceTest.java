@@ -1,84 +1,74 @@
 package com.meethybridhub.orders;
 
-import com.meethybridhub.orders.dto.OrderDtos;
-import com.meethybridhub.orders.dto.OrderDtos.*;
+import com.meethybridhub.catalog.*;
+import com.meethybridhub.common.exception.BadRequestException;
+import com.meethybridhub.identity.User;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
-@SpringBootTest
-@ActiveProfiles("test")
-@Transactional
-public class OrderServiceTest {
-
-    @Autowired
-    private OrderService orderService;
+@ExtendWith(MockitoExtension.class)
+class OrderServiceTest {
+    @Mock OrderRepository orders;
+    @Mock ProductVariantRepository variants;
+    @Mock InventoryRepository inventory;
 
     @Test
-    public void testCreateOrderAndProcessPayment() {
-        var itemReq = new OrderDtos.CreateOrderItemRequest("var_123", 2, new BigDecimal("49.99"));
-        var createOrderReq = new OrderDtos.CreateOrderRequest(
-            "store_1",
-            "cust_1",
-            "123 Main St",
-            "123 Main St",
-            List.of(itemReq),
-            null,
-            "Test order"
-        );
+    void createsOrderFromVariantPriceAndTrimsOptionalFields() {
+        Product product = new Product(7L, "Shoe", null, new BigDecimal("25.00"), null);
+        ReflectionTestUtils.setField(product, "id", 10L);
+        ProductVariant variant = new ProductVariant(7L, product, "SKU-1", "42", "Black", null);
+        ReflectionTestUtils.setField(variant, "id", 11L);
+        Inventory stock = new Inventory(7L, variant, 10);
+        when(variants.findByIdAndStoreId(11L, 7L)).thenReturn(Optional.of(variant));
+        when(inventory.findByStoreIdAndVariantId(7L, 11L)).thenReturn(Optional.of(stock));
+        when(orders.save(any(Order.class))).thenAnswer(i -> i.getArgument(0));
 
-        Order order = orderService.createOrder(createOrderReq);
-        assertThat(order).isNotNull();
-        assertThat(order.getId()).isNotNull();
-        assertThat(order.getTotalAmount()).isEqualTo(new BigDecimal("99.98"));
-        assertThat(order.getPaymentStatus()).isEqualTo("UNPAID");
+        Order result = service().create(7L, customer(), " buyer@example.com ", " address ", "  ", " note ",
+                List.of(new OrderService.LineRequest(11L, 2)));
 
-        var paymentReq = new OrderDtos.CreatePaymentRequest(
-            order.getId(),
-            "CREDIT_CARD",
-            new BigDecimal("99.98"),
-            "TX-9999",
-            "{}"
-        );
-
-        Payment payment = orderService.createPayment(paymentReq);
-        assertThat(payment).isNotNull();
-        assertThat(payment.getStatus()).isEqualTo("COMPLETED");
-
-        Order updatedOrder = orderService.getOrderById(order.getId());
-        assertThat(updatedOrder.getPaymentStatus()).isEqualTo("PAID");
+        assertThat(result.getCustomerEmail()).isEqualTo("buyer@example.com");
+        assertThat(result.getBillingAddress()).isNull();
+        assertThat(result.getTotalAmount()).isEqualByComparingTo("50.00");
+        assertThat(result.getItems()).hasSize(1);
+        assertThat(result.getItems().get(0).getTotalPrice()).isEqualByComparingTo("50.00");
     }
 
     @Test
-    public void testInstallmentPlanFlow() {
-        var itemReq = new OrderDtos.CreateOrderItemRequest("var_100", 1, new BigDecimal("120.00"));
-        var createOrderReq = new OrderDtos.CreateOrderRequest(
-            "store_1",
-            "cust_2",
-            "456 Oak St",
-            "456 Oak St",
-            List.of(itemReq),
-            null,
-            null
-        );
-
-        Order order = orderService.createOrder(createOrderReq);
-
-        var planReq = new OrderDtos.CreateInstallmentPlanRequest(order.getId(), 3);
-        InstallmentPlan plan = orderService.createInstallmentPlan(planReq);
-
-        assertThat(plan).isNotNull();
-        assertThat(plan.getInstallmentPayments()).hasSize(3);
-
-        var pmtReq = new OrderDtos.ProcessInstallmentPaymentRequest(plan.getId(), new BigDecimal("40.00"));
-        InstallmentPayment pmt = orderService.processInstallmentPayment(pmtReq);
-        assertThat(pmt.getStatus()).isEqualTo("PAID");
+    void rejectsEmptyAndInvalidOrders() {
+        assertThatThrownBy(() -> service().create(7L, customer(), "a", "b", null, null, List.of()))
+                .isInstanceOf(BadRequestException.class);
+        assertThatThrownBy(() -> service().create(7L, customer(), "a", "b", null, null,
+                List.of(new OrderService.LineRequest(1L, 0))))
+                .isInstanceOf(BadRequestException.class);
     }
+
+    @Test
+    void listsAndCancelsOrders() {
+        Order order = order(OrderStatus.PENDING);
+        when(orders.findByIdAndStoreId(1L, 7L)).thenReturn(Optional.of(order));
+        when(orders.save(order)).thenReturn(order);
+        when(orders.findAllByStoreId(7L, PageRequest.of(0, 10))).thenReturn(new PageImpl<>(List.of(order)));
+        assertThat(service().get(7L, 1L, customer())).isSameAs(order);
+        assertThat(service().list(7L, owner(), PageRequest.of(0, 10)).getContent()).containsExactly(order);
+        assertThat(service().cancel(7L, 1L, owner()).getStatus()).isEqualTo(OrderStatus.CANCELLED);
+    }
+
+    private OrderService service() { return new OrderService(orders, variants, inventory); }
+    private User customer() { User u = new User("buyer@example.com", "hash", "Buyer"); ReflectionTestUtils.setField(u, "id", 3L); return u; }
+    private User owner() { User u = customer(); u.setRoles("STORE_OWNER"); return u; }
+    private Order order(OrderStatus status) { Order o = new Order(7L, customer(), "ORD-1", "buyer@example.com", "addr", null, null); ReflectionTestUtils.setField(o, "id", 1L); o.setStatus(status); o.setTotalAmount(new BigDecimal("10.00")); return o; }
 }
