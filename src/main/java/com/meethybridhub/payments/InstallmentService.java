@@ -35,7 +35,7 @@ public class InstallmentService {
         if (order.getStatus() == OrderStatus.CANCELLED) {
             throw new BadRequestException("Cannot create installments for a cancelled order");
         }
-        if (planRepository.findByStoreIdAndOrderId(storeId, orderId).isPresent()) {
+        if (planRepository.findByStoreIdAndOrder_Id(storeId, orderId).isPresent()) {
             throw new BadRequestException("An installment plan already exists for this order");
         }
         BigDecimal amount = order.getTotalAmount().divide(BigDecimal.valueOf(count), 2, RoundingMode.CEILING);

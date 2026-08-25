@@ -7,5 +7,5 @@ import java.util.Optional;
 
 @Repository
 public interface InstallmentPlanRepository extends TenantRepository<InstallmentPlan, Long> {
-    Optional<InstallmentPlan> findByStoreIdAndOrderId(Long storeId, Long orderId);
+    Optional<InstallmentPlan> findByStoreIdAndOrder_Id(Long storeId, Long orderId);
 }
