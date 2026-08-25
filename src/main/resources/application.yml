@@ -109,6 +109,16 @@ mail:
           enable: true
   from: ${MAIL_FROM:noreply@meethybridhub.com}
 
+# Dormant platform-charge module (see docs/platform-charge-dormant-module.md).
+# Ships ASLEEP: charge() and the nightly sweep are no-ops until enabled.
+# Wake it with PLATFORM_CHARGE_ENABLED=true + PLATFORM_CHARGE_FLAT_FEE=<amount>
+# (and a ChargeableTransactionSource implementation once Orders/Payments land).
+platform-charge:
+  enabled: ${PLATFORM_CHARGE_ENABLED:false}
+  flat-fee: ${PLATFORM_CHARGE_FLAT_FEE:0}
+  currency: ${PLATFORM_CHARGE_CURRENCY:NGN}
+  sweep-cron: ${PLATFORM_CHARGE_SWEEP_CRON:0 0 3 * * *}
+
 logging:
   level:
     root: INFO
