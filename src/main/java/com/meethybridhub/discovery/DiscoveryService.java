@@ -9,6 +9,8 @@ import com.meethybridhub.store.StoreRepository;
 import com.meethybridhub.store.StoreService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -96,6 +98,7 @@ public class DiscoveryService {
 
     // ─── Favorites ──────────────────────────────────────────────────
 
+    @CacheEvict(value = "featured", allEntries = true)
     public UserFavorite addFavorite(User user, FavoriteEntityType entityType, Long entityId) {
         if (favoriteRepo.existsByUserIdAndEntityTypeAndEntityId(user.getId(), entityType, entityId)) {
             throw new BadRequestException("Already favorited");
@@ -122,14 +125,17 @@ public class DiscoveryService {
 
     // ─── Featured Content ───────────────────────────────────────────
 
+    @Cacheable(value = "featured", key = "'stores'")
     public List<FeaturedContent> getFeaturedStores() {
         return featuredRepo.findActiveByType(FeaturedContentType.STORE, Instant.now());
     }
 
+    @Cacheable(value = "featured", key = "'products'")
     public List<FeaturedContent> getFeaturedProducts() {
         return featuredRepo.findActiveByType(FeaturedContentType.PRODUCT, Instant.now());
     }
 
+    @Cacheable(value = "featured", key = "'banners'")
     public List<FeaturedContent> getActiveBanners() {
         return featuredRepo.findActiveByType(FeaturedContentType.BANNER, Instant.now());
     }
