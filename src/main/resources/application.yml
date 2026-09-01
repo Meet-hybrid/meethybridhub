@@ -46,11 +46,68 @@ spring:
 server:
   port: ${PORT:8080}
 
+# Redis configuration (Phase 9: caching layer)
+# In production, set SPRING_DATA_REDIS_URL or REDIS_URL.
+# Local dev: run `docker run -d --name redis -p 6379:6379 redis:7-alpine`
+spring.data.redis:
+  host: ${REDIS_HOST:localhost}
+  port: ${REDIS_PORT:6379}
+  timeout: ${REDIS_TIMEOUT:2000}
+
+# Disable Redis auto-configuration when no Redis is available (CI, tests)
+# Set SPRING_DATA_REDIS_ENABLED=true in production.
+spring.autoconfigure:
+  exclude:
+    - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+    - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+
+# Resilience4j circuit breaker and rate limiter (Phase 9)
+resilience4j:
+  circuitbreaker:
+    instances:
+      default:
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+      externalApi:
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 60
+        waitDurationInOpenState: 30s
+  ratelimiter:
+    instances:
+      default:
+        limitForPeriod: 100
+        limitRefreshPeriod: 1s
+        timeoutDuration: 0
+      strict:
+        limitForPeriod: 10
+        limitRefreshPeriod: 1s
+        timeoutDuration: 0
+  retry:
+    instances:
+      default:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
 
 # JWT Configuration
 # IMPORTANT: In production, JWT_SECRET must be a securely generated random string
