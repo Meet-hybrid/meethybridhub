@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { StoreProvider } from "@/components/StoreProvider";
 import { CartProvider } from "@/components/CartProvider";
+import { AuthProvider } from "@/components/AuthProvider";
 import { getStoreConfigFromHost } from "@/lib/store-config";
 import { headers } from "next/headers";
 
@@ -24,11 +25,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         }`}
       >
         <StoreProvider store={store}>
-          <CartProvider>
-            <Header />
-            <main className="flex-1">{children}</main>
-            <Footer />
-          </CartProvider>
+          <AuthProvider>
+            <CartProvider>
+              <Header />
+              <main className="flex-1">{children}</main>
+              <Footer />
+            </CartProvider>
+          </AuthProvider>
         </StoreProvider>
       </body>
     </html>

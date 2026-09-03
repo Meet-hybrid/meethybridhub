@@ -6,10 +6,12 @@ import { useState } from "react";
 import { Menu, X, ShoppingBag, Search, User } from "lucide-react";
 import { useStore } from "@/components/StoreProvider";
 import { useCart } from "@/components/CartProvider";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function Header() {
   const activeStore = useStore();
   const { items } = useCart();
+  const { isAuthenticated } = useAuth();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const isDivinez = activeStore.slug === "divinez-signature";
@@ -83,11 +85,15 @@ export default function Header() {
             }`}>
               <Search className="w-5 h-5" />
             </button>
-            <button className={`p-2 transition-colors ${
-              isDivinez ? "text-[#0B4A2B]/70 hover:text-[#0B4A2B]" : "text-[#aa9a8b] hover:text-[#f7f1e8]"
-            }`}>
+            <Link
+              href={isAuthenticated ? "/account/orders" : "/login"}
+              className={`p-2 transition-colors ${
+                isDivinez ? "text-[#0B4A2B]/70 hover:text-[#0B4A2B]" : "text-[#aa9a8b] hover:text-[#f7f1e8]"
+              }`}
+              aria-label={isAuthenticated ? "My account" : "Sign in"}
+            >
               <User className="w-5 h-5" />
-            </button>
+            </Link>
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
               className={`md:hidden p-2 ${
@@ -124,6 +130,24 @@ export default function Header() {
                 {link.label}
               </Link>
             ))}
+            {/* Account link in mobile menu */}
+            <div className={`pt-2 mt-2 border-t ${isDivinez ? "border-[#0B4A2B]/10" : "border-[#3a2b20]"}`}>
+              <Link
+                href={isAuthenticated ? "/account/orders" : "/login"}
+                onClick={() => setMobileOpen(false)}
+                className={`block px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isDivinez
+                    ? (pathname.startsWith("/account") || pathname === "/login" || pathname === "/register"
+                        ? "bg-[#0B4A2B]/10 text-[#0B4A2B]"
+                        : "text-[#0B4A2B]/80 hover:bg-[#0B4A2B]/5")
+                    : (pathname.startsWith("/account") || pathname === "/login" || pathname === "/register"
+                        ? "bg-[#352316] text-[#e0a15d]"
+                        : "text-[#aa9a8b] hover:bg-[#241912]")
+                }`}
+              >
+                {isAuthenticated ? "My Orders" : "Sign in"}
+              </Link>
+            </div>
           </nav>
         </div>
       )}

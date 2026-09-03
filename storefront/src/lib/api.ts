@@ -1,7 +1,20 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+}
+
 class StorefrontApiClient {
   private token: string | null = null;
+  private refreshTokenValue: string | null = null;
+
+  constructor() {
+    if (typeof window !== "undefined") {
+      this.token = localStorage.getItem("access_token");
+      this.refreshTokenValue = localStorage.getItem("refresh_token");
+    }
+  }
 
   private getHeaders(): Record<string, string> {
     const headers: Record<string, string> = {
@@ -34,7 +47,77 @@ class StorefrontApiClient {
     return res.json();
   }
 
-  // Store discovery
+  // ── Auth ──────────────────────────────────────────────────────
+
+  async login(email: string, password: string): Promise<AuthTokens> {
+    const res = await this.request<{ accessToken: string; refreshToken: string; message: string }>(
+      "/api/v1/auth/login",
+      { method: "POST", body: JSON.stringify({ email, password }) }
+    );
+    this.setTokens(res.accessToken, res.refreshToken);
+    return { accessToken: res.accessToken, refreshToken: res.refreshToken };
+  }
+
+  async register(email: string, password: string, fullName: string): Promise<AuthTokens> {
+    const res = await this.request<{ accessToken: string; refreshToken: string; message: string }>(
+      "/api/v1/auth/register",
+      { method: "POST", body: JSON.stringify({ email, password, fullName }) }
+    );
+    this.setTokens(res.accessToken, res.refreshToken);
+    return { accessToken: res.accessToken, refreshToken: res.refreshToken };
+  }
+
+  async refreshAccessToken(): Promise<AuthTokens | null> {
+    if (!this.refreshTokenValue) return null;
+    try {
+      const res = await this.request<{ accessToken: string; refreshToken: string; message: string }>(
+        "/api/v1/auth/refresh",
+        { method: "POST", body: JSON.stringify({ refreshToken: this.refreshTokenValue }) }
+      );
+      this.setTokens(res.accessToken, res.refreshToken);
+      return { accessToken: res.accessToken, refreshToken: res.refreshToken };
+    } catch {
+      this.clearTokens();
+      return null;
+    }
+  }
+
+  async logout(): Promise<void> {
+    try {
+      await this.request<{ message: string }>("/api/v1/auth/logout", {
+        method: "POST",
+        body: JSON.stringify({ refreshToken: this.refreshTokenValue }),
+      });
+    } catch {
+      // Ignore errors on logout
+    }
+    this.clearTokens();
+  }
+
+  setTokens(accessToken: string, refreshToken: string) {
+    this.token = accessToken;
+    this.refreshTokenValue = refreshToken;
+    if (typeof window !== "undefined") {
+      localStorage.setItem("access_token", accessToken);
+      localStorage.setItem("refresh_token", refreshToken);
+    }
+  }
+
+  clearTokens() {
+    this.token = null;
+    this.refreshTokenValue = null;
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+    }
+  }
+
+  isAuthenticated(): boolean {
+    return !!this.token;
+  }
+
+  // ── Store discovery ──────────────────────────────────────────
+
   getStores() {
     return this.request<any[]>("/api/v1/discovery/stores");
   }
@@ -47,7 +130,8 @@ class StorefrontApiClient {
     return this.request<any>(`/api/v1/discovery/stores/${slug}/settings`);
   }
 
-  // Products
+  // ── Products ─────────────────────────────────────────────────
+
   getProducts(slug: string, params?: { page?: number; size?: number; category?: string; search?: string }) {
     const qs = new URLSearchParams();
     if (params?.page) qs.set("page", String(params.page));
@@ -61,25 +145,42 @@ class StorefrontApiClient {
     return this.request<any>(`/api/v1/public/stores/${encodeURIComponent(slug)}/products/${id}`);
   }
 
+  // ── Orders ───────────────────────────────────────────────────
+
   createOrder(data: { customerEmail: string; shippingAddress: string; billingAddress?: string; notes?: string; items: { variantId: number; quantity: number }[] }) {
     return this.request<any>("/api/v1/orders", { method: "POST", body: JSON.stringify(data) });
+  }
+
+  getOrders(page = 0, size = 10) {
+    return this.request<any>(`/api/v1/orders?page=${page}&size=${size}`);
+  }
+
+  getOrder(orderId: number) {
+    return this.request<any>(`/api/v1/orders/${orderId}`);
+  }
+
+  cancelOrder(orderId: number) {
+    return this.request<any>(`/api/v1/orders/${orderId}/cancel`, { method: "PUT" });
   }
 
   createInstallmentPlan(orderId: number, installmentCount: number) {
     return this.request<any>(`/api/v1/orders/${orderId}/installments`, { method: "POST", body: JSON.stringify({ installmentCount }) });
   }
 
-  // Categories
+  // ── Categories ───────────────────────────────────────────────
+
   getCategories(slug: string) {
     return this.request<any[]>(`/api/v1/public/stores/${encodeURIComponent(slug)}/categories`);
   }
 
-  // Reviews
+  // ── Reviews ──────────────────────────────────────────────────
+
   getStoreReviews(storeId: number) {
     return this.request<any[]>(`/api/v1/discovery/stores/${storeId}/reviews`);
   }
 
-  // Custom Orders
+  // ── Custom Orders ────────────────────────────────────────────
+
   submitCustomOrder(data: {
     title: string;
     description: string;
