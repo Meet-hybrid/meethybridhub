@@ -1,27 +1,32 @@
 @import "tailwindcss";
 
 :root {
-  --background: #100d0b;
-  --foreground: #f7f1e8;
+  --background: #FAFAF8;
+  --foreground: #0B4A2B;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
 }
 
-::selection { background: #6f4d35; color: #f7f1e8; }
+::selection { background: #0B4A2B; color: #FAFAF8; }
 
-/* Keep theme overrides scoped. Generic Tailwind colors must retain their
-   semantic meaning so light cards keep dark, readable text. */
+/* Store-specific theme overrides */
+body[data-store="divinez-signature"] input,
+body[data-store="divinez-signature"] textarea,
+body[data-store="divinez-signature"] select { background-color: #fff; color: #0B4A2B; border-color: #0B4A2B20; }
+body[data-store="divinez-signature"] input::placeholder,
+body[data-store="divinez-signature"] textarea::placeholder { color: #0B4A2B80; }
+
 body[data-store="meethybridhub"] input,
 body[data-store="meethybridhub"] textarea,
 body[data-store="meethybridhub"] select { background-color: #211712; color: #f7f1e8; }
@@ -36,15 +41,16 @@ body[data-store="meethybridhub"] textarea::placeholder { color: #9d8b7b; }
 .float-slow { animation: atelier-float 8s ease-in-out infinite; }
 .float-slower { animation: atelier-float 11s ease-in-out 1s infinite; }
 
+.about-hero-divinez { background: linear-gradient(135deg, #07331D, #0B4A2B 52%, #0E5C35); }
 .about-hero { background: linear-gradient(135deg, #704b32, #b67843 52%, #d49a65); }
-.eyebrow { color: #a96d3e; font-size: .72rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; margin-bottom: .8rem; }
-.about-stat-panel, .about-form { background: #fffaf5; border: 1px solid #ead9c6; border-radius: 1.5rem; padding: 2rem; }
-.about-card { background: #fff; border: 1px solid #eadfd4; border-radius: 1.2rem; padding: 2rem; }
-.about-card-dark { background: #211712; border-color: #493526; }
-.about-index { color: #b67843; display: block; font: 700 .75rem var(--font-geist-mono); letter-spacing: .12em; margin-bottom: 2.5rem; }
-.about-form label { display: block; color: #57483d; font-size: .85rem; font-weight: 600; }
-.about-form input, .about-form textarea { display: block; width: 100%; margin-top: .4rem; border: 1px solid #d9c8b6; border-radius: .7rem; padding: .75rem 1rem; background: #fff; color: #241914; }
-.about-form button { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; width: 100%; border-radius: 999px; padding: .8rem 1rem; background: #9a6842; color: #fff; font-weight: 700; }
+.eyebrow { color: #0B4A2B; font-size: .72rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; margin-bottom: .8rem; }
+.about-stat-panel, .about-form { background: #fff; border: 1px solid #0B4A2B15; border-radius: 1.5rem; padding: 2rem; }
+.about-card { background: #fff; border: 1px solid #0B4A2B15; border-radius: 1.2rem; padding: 2rem; }
+.about-card-dark { background: #0B4A2B; border-color: #0E5C35; }
+.about-index { color: #0B4A2B; display: block; font: 700 .75rem var(--font-mono); letter-spacing: .12em; margin-bottom: 2.5rem; }
+.about-form label { display: block; color: #0B4A2B; font-size: .85rem; font-weight: 600; }
+.about-form input, .about-form textarea { display: block; width: 100%; margin-top: .4rem; border: 1px solid #0B4A2B30; border-radius: .7rem; padding: .75rem 1rem; background: #fff; color: #0B4A2B; }
+.about-form button { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; width: 100%; border-radius: 999px; padding: .8rem 1rem; background: #0B4A2B; color: #FAFAF8; font-weight: 700; }
 
 @media (prefers-reduced-motion: reduce) {
   .float-slow, .float-slower { animation: none; }

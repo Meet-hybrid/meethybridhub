@@ -64,9 +64,170 @@ export default function HomePage() {
         { id: 8, name: "Suede Runner", price: 72000, category: { name: "Sneakers" }, description: "Low-profile suede runner with a grounded palette" },
       ];
 
+  const isDivinez = activeStore.slug === "divinez-signature";
+
+  if (isDivinez) {
+    return (
+      <div className="min-h-screen">
+        {/* Hero Section - DivinezSignature */}
+        <section className="bg-[#FAFAF8] text-[#0B4A2B]">
+          <div className="max-w-6xl mx-auto px-6 py-20 text-center">
+            <span className="text-[#0B4A2B]/70 uppercase tracking-widest text-xs font-semibold">
+              {activeStore.heroLabel}
+            </span>
+            <h1 className="text-5xl font-serif font-extrabold text-[#0B4A2B] mt-3 mb-6 leading-tight">
+              {activeStore.heroTitle}
+              <br />
+              <span className="text-[#0B4A2B]">{activeStore.heroAccent}</span>
+            </h1>
+            <p className="text-[#0B4A2B]/80 max-w-xl mx-auto text-base leading-relaxed mb-8">
+              {activeStore.heroBody}
+            </p>
+            <div className="flex justify-center gap-4">
+              <Link
+                href="/products"
+                className="bg-[#0B4A2B] text-[#FAFAF8] px-8 py-3 rounded-full text-sm font-medium hover:bg-[#07331D] transition shadow-sm"
+              >
+                Explore Collection
+              </Link>
+              <Link
+                href="/custom-order"
+                className="border border-[#0B4A2B] text-[#0B4A2B] px-8 py-3 rounded-full text-sm font-medium hover:bg-[#0B4A2B]/5 transition"
+              >
+                Request Custom Piece
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* Features Strip - DivinezSignature */}
+        <section className="bg-[#0B4A2B] text-[#FAFAF8]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {activeStore.features.map((feature, index) => {
+                const icons = [
+                  <svg key="hand" className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 0 0-2.455 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" /></svg>,
+                  <svg key="gift" className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 1 0 9.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1 1 14.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" /></svg>,
+                  <svg key="custom" className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1 1.622-3.395m3.42 3.42a15.995 15.995 0 0 0 4.764-4.648l3.876-5.814a1.151 1.151 0 0 0-1.597-1.597L14.146 6.32a15.996 15.996 0 0 0-4.649 4.763m3.42 3.42a6.776 6.776 0 0 0-3.42-3.42" /></svg>,
+                ];
+                return (
+                <div key={feature.title} className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-[#FAFAF8]/10 rounded-full flex items-center justify-center shrink-0">
+                    <span className="text-[#FAFAF8]">{icons[index]}</span>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm text-[#FAFAF8]">{feature.title}</p>
+                    <p className="text-xs text-[#FAFAF8]/70">{feature.description}</p>
+                  </div>
+                </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* Categories - DivinezSignature */}
+        <section className="py-16 bg-[#FAFAF8]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-10">
+              <span className="text-[#0B4A2B]/70 uppercase tracking-widest text-xs font-semibold">Collections</span>
+              <h2 className="text-3xl font-serif font-bold text-[#0B4A2B] mt-2">Shop by Category</h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {displayCategories.map((cat: any) => (
+                <Link
+                  key={cat.id}
+                  href={`/products?category=${cat.name?.toLowerCase() ?? ""}`}
+                  className="group relative bg-white rounded-2xl p-5 text-center hover:shadow-md transition-all border border-[#0B4A2B]/10"
+                >
+                  <div className="w-12 h-12 bg-[#0B4A2B]/10 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:bg-[#0B4A2B]/15 transition-colors">
+                    <span className="text-xs font-semibold tracking-[0.2em] text-[#0B4A2B]">{String(cat.name ?? "").slice(0, 2).toUpperCase()}</span>
+                  </div>
+                  <h3 className="font-semibold text-[#0B4A2B] text-sm">{cat.name}</h3>
+                  {cat.description && (
+                    <p className="text-[10px] text-[#0B4A2B]/60 mt-1 line-clamp-2">{cat.description}</p>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Featured Products - DivinezSignature */}
+        <section className="py-16 bg-white border-y border-[#0B4A2B]/10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <span className="text-[#0B4A2B]/70 uppercase tracking-widest text-xs font-semibold">Curated Selection</span>
+                <h2 className="text-2xl font-serif font-bold text-[#0B4A2B] mt-1">Featured Pieces</h2>
+              </div>
+              <Link
+                href="/products"
+                className="text-sm font-medium text-[#0B4A2B] hover:text-[#0B4A2B]/70"
+              >
+                View all →
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {displayProducts.map((product: any) => (
+                <Link
+                  key={product.id}
+                  href={`/products/${product.id}`}
+                  className="group bg-[#FAFAF8] rounded-2xl border border-[#0B4A2B]/10 overflow-hidden hover:shadow-lg transition-all"
+                >
+                  <div className="aspect-[3/4] bg-[#0B4A2B]/5 flex items-center justify-center">
+                    <span className="text-xs font-semibold tracking-[0.24em] uppercase text-[#0B4A2B]/40">
+                      {product.category?.name ?? activeStore.shortName}
+                    </span>
+                  </div>
+                  <div className="p-4">
+                    <p className="text-xs text-[#0B4A2B]/60 font-medium mb-1">
+                      {product.category?.name ?? "General"}
+                    </p>
+                    <h3 className="font-semibold text-[#0B4A2B] group-hover:text-[#0B4A2B]/80 transition-colors line-clamp-1">
+                      {product.name}
+                    </h3>
+                    <div className="flex items-center justify-between mt-2">
+                      <p className="text-lg font-bold text-[#0B4A2B]">
+                        {formatPrice(product.price)}
+                      </p>
+                      <div className="flex items-center gap-0.5">
+                        <Star className="w-3 h-3 text-[#0B4A2B]" />
+                        <span className="text-xs text-[#0B4A2B]/60">4.9</span>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Custom Order CTA - DivinezSignature */}
+        <section className="py-16 bg-[#FAFAF8]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="bg-[#0B4A2B] border border-[#0B4A2B] rounded-3xl p-8 md:p-12 text-[#FAFAF8] text-center">
+              <h2 className="text-3xl font-serif font-bold mb-4">Design Your Own Piece</h2>
+              <p className="text-[#FAFAF8]/80 max-w-lg mx-auto mb-8">
+                From custom colors to personalized sizing, we craft bespoke beaded jewelry
+                that reflects your unique style. Let us create something special for you.
+              </p>
+              <Link
+                href="/custom-order"
+                className="inline-flex items-center gap-2 px-8 py-4 bg-[#FAFAF8] text-[#0B4A2B] font-bold rounded-full hover:bg-white transition-colors text-lg"
+              >
+                Start Custom Order <ArrowRight className="w-5 h-5" />
+              </Link>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Hero Section */}
+      {/* Hero Section - MeethybridHub (default dark palette) */}
       <section className="relative bg-[#241914] text-white overflow-hidden border-b border-[#3a2b20]">
         <div className="pointer-events-none absolute right-[8%] top-16 hidden md:block float-slow">
           <div className="h-44 w-44 rounded-full border border-[#8a6548]/50" />
@@ -96,7 +257,7 @@ export default function HomePage() {
                 href="/custom-order"
                 className="inline-flex items-center gap-2 px-6 py-3 border-2 border-white/40 text-white font-semibold rounded-full hover:bg-white/10 transition-colors"
               >
-                {activeStore.slug === "divinez-signature" ? "Request a custom piece" : "Build your personal edit"}
+                Build your personal edit
               </Link>
             </div>
           </div>

@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Search, Star } from "lucide-react";
+import { Search, Star, Heart } from "lucide-react";
 import { storefrontApi } from "@/lib/api";
 import { useStore } from "@/components/StoreProvider";
 
@@ -94,35 +94,58 @@ function ProductsContent() {
     new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN" }).format(price);
 
   const displayCategories = categories.length > 0 ? categories : activeStore.categories.map((category, id) => ({ id, name: category.name }));
+  const isDivinez = activeStore.slug === "divinez-signature";
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 ${
+      isDivinez ? "text-[#0B4A2B]" : "text-gray-900"
+    }`}>
       {/* Page Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Shop</h1>
-        <p className="text-gray-500 mt-2">{activeStore.description}</p>
+        {isDivinez ? (
+          <>
+            <span className="text-[#0B4A2B]/70 uppercase tracking-widest text-xs font-semibold">Our Collection</span>
+            <h1 className="text-3xl font-serif font-bold text-[#0B4A2B] mt-1">Shop All</h1>
+            <p className="text-[#0B4A2B]/70 mt-2">{activeStore.description}</p>
+          </>
+        ) : (
+          <>
+            <h1 className="text-3xl font-bold text-gray-900">Shop</h1>
+            <p className="text-gray-500 mt-2">{activeStore.description}</p>
+          </>
+        )}
       </div>
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4 mb-8">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${
+            isDivinez ? "text-[#0B4A2B]/40" : "text-gray-400"
+          }`} />
           <input
             type="text"
             placeholder={`Search ${activeStore.shortName.toLowerCase()} products...`}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-full text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+            className={`w-full pl-10 pr-4 py-2.5 border rounded-full text-sm outline-none ${
+              isDivinez
+                ? "border-[#0B4A2B]/20 focus:ring-2 focus:ring-[#0B4A2B]/20 focus:border-[#0B4A2B]/40"
+                : "border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+            }`}
           />
         </div>
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setSelectedCategory("")}
             className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
-              !selectedCategory
-                ? "bg-amber-600 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              isDivinez
+                ? !selectedCategory
+                  ? "bg-[#0B4A2B] text-[#FAFAF8]"
+                  : "bg-[#0B4A2B]/10 text-[#0B4A2B] hover:bg-[#0B4A2B]/15"
+                : !selectedCategory
+                  ? "bg-amber-600 text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
             All
@@ -132,9 +155,13 @@ function ProductsContent() {
               key={cat.id}
               onClick={() => setSelectedCategory(cat.name)}
               className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
-                selectedCategory === cat.name
-                  ? "bg-amber-600 text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                isDivinez
+                  ? selectedCategory === cat.name
+                    ? "bg-[#0B4A2B] text-[#FAFAF8]"
+                    : "bg-[#0B4A2B]/10 text-[#0B4A2B] hover:bg-[#0B4A2B]/15"
+                  : selectedCategory === cat.name
+                    ? "bg-amber-600 text-white"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               }`}
             >
               {categoryEmojis[cat.name] ?? "📿"} {cat.name}
@@ -146,14 +173,59 @@ function ProductsContent() {
       {/* Products Grid */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="animate-spin w-8 h-8 border-4 border-amber-600 border-t-transparent rounded-full" />
+          <div className={`animate-spin w-8 h-8 border-4 border-t-transparent rounded-full ${
+            isDivinez ? "border-[#0B4A2B]" : "border-amber-600"
+          }`} />
         </div>
       ) : filteredProducts.length === 0 ? (
         <div className="text-center py-20">
-          <p className="text-gray-500 text-lg">No products found</p>
-          <p className="text-gray-400 text-sm mt-1">Try adjusting your filters or search terms</p>
+          <p className={`text-lg ${isDivinez ? "text-[#0B4A2B]/60" : "text-gray-500"}`}>No products found</p>
+          <p className={`text-sm mt-1 ${isDivinez ? "text-[#0B4A2B]/40" : "text-gray-400"}`}>Try adjusting your filters or search terms</p>
+        </div>
+      ) : isDivinez ? (
+        /* DivinezSignature Product Grid */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filteredProducts.map((product: any) => (
+            <Link
+              key={product.id}
+              href={`/products/${product.id}`}
+              className="group bg-[#FAFAF8] rounded-2xl border border-[#0B4A2B]/10 overflow-hidden hover:shadow-lg transition-all"
+            >
+              <div className="aspect-[3/4] bg-[#0B4A2B]/5 flex items-center justify-center relative">
+                <span className="text-xs font-semibold tracking-[0.24em] uppercase text-[#0B4A2B]/30">
+                  {product.category?.name ?? activeStore.shortName}
+                </span>
+                <div className="absolute top-3 right-3">
+                  <button className="w-8 h-8 rounded-full bg-white/80 flex items-center justify-center text-[#0B4A2B]/50 hover:text-[#0B4A2B] hover:bg-white transition-colors">
+                    <Heart className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              <div className="p-4">
+                <p className="text-xs text-[#0B4A2B]/60 font-medium mb-1">
+                  {product.category?.name ?? "General"}
+                </p>
+                <h3 className="font-semibold text-[#0B4A2B] group-hover:text-[#0B4A2B]/80 transition-colors line-clamp-1">
+                  {product.name}
+                </h3>
+                {product.description && (
+                  <p className="text-xs text-[#0B4A2B]/50 mt-1 line-clamp-2">{product.description}</p>
+                )}
+                <div className="flex items-center justify-between mt-3">
+                  <p className="text-lg font-bold text-[#0B4A2B]">
+                    {formatPrice(product.price)}
+                  </p>
+                  <div className="flex items-center gap-0.5">
+                    <Star className="w-3 h-3 text-[#0B4A2B]" />
+                    <span className="text-xs text-[#0B4A2B]/50">4.9</span>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          ))}
         </div>
       ) : (
+        /* MeethybridHub Product Grid (default) */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredProducts.map((product: any) => (
             <Link
