@@ -222,4 +222,132 @@ class AdminServiceTest {
         assertThrows(BadRequestException.class,
                 () -> service.listDisputes(1L, "BOGUS"));
     }
+
+    // ─── getAllConfig ─────────────────────────────────────────────
+
+    @Test
+    void getAllConfig_returnsMap() {
+        PlatformConfig c1 = new PlatformConfig("k1", "v1", null);
+        PlatformConfig c2 = new PlatformConfig("k2", "v2", null);
+        when(configRepo.findAll()).thenReturn(List.of(c1, c2));
+
+        Map<String, String> result = service.getAllConfig();
+        assertEquals(2, result.size());
+        assertEquals("v1", result.get("k1"));
+    }
+
+    // ─── Commission Rules ───────────────────────────────────────
+
+    @Test
+    void listCommissionRules_delegatesToRepo() {
+        when(commissionRuleRepo.findActiveForStore(1L)).thenReturn(List.of());
+        assertEquals(0, service.listCommissionRules(1L).size());
+    }
+
+    @Test
+    void updateCommissionRule_updatesRateAndActive() {
+        CommissionRule rule = new CommissionRule(1L, CommissionRuleType.PERCENTAGE,
+                new BigDecimal("2.5"), "NGN", null, null);
+        rule.setId(1L);
+        when(commissionRuleRepo.findById(1L)).thenReturn(Optional.of(rule));
+        when(commissionRuleRepo.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        CommissionRule updated = service.updateCommissionRule(1L, new BigDecimal("5.0"), false);
+        assertEquals(new BigDecimal("5.0"), updated.getRate());
+        assertFalse(updated.isActive());
+    }
+
+    @Test
+    void updateCommissionRule_throwsWhenNotFound() {
+        when(commissionRuleRepo.findById(999L)).thenReturn(Optional.empty());
+        assertThrows(ResourceNotFoundException.class,
+                () -> service.updateCommissionRule(999L, null, true));
+    }
+
+    // ─── Commission Entries ─────────────────────────────────────
+
+    @Test
+    void listCommissions_delegatesToRepo() {
+        when(commissionEntryRepo.findByStoreIdOrderByCreatedAtDesc(1L)).thenReturn(List.of());
+        assertEquals(0, service.listCommissions(1L).size());
+    }
+
+    @Test
+    void getCommissionSummary_returnsTotals() {
+        when(commissionEntryRepo.sumCommissionByStoreAndStatus(1L, CommissionStatus.PENDING))
+                .thenReturn(new BigDecimal("500"));
+        when(commissionEntryRepo.sumCommissionByStoreAndStatus(1L, CommissionStatus.PAID))
+                .thenReturn(new BigDecimal("1000"));
+        when(commissionEntryRepo.countByStoreId(1L)).thenReturn(5L);
+
+        Map<String, Object> summary = service.getCommissionSummary(1L);
+        assertEquals(new BigDecimal("500"), summary.get("pendingAmount"));
+        assertEquals(new BigDecimal("1000"), summary.get("paidAmount"));
+        assertEquals(5L, summary.get("totalEntries"));
+    }
+
+    // ─── Disputes ───────────────────────────────────────────────
+
+    @Test
+    void listDisputes_withValidStatus() {
+        when(disputeRepo.findByStatus(DisputeStatus.OPEN)).thenReturn(List.of());
+        assertEquals(0, service.listDisputes(1L, "OPEN").size());
+    }
+
+    @Test
+    void listDisputes_withNullStatus() {
+        when(disputeRepo.findByStoreIdOrderByCreatedAtDesc(1L)).thenReturn(List.of());
+        assertEquals(0, service.listDisputes(1L, null).size());
+    }
+
+    @Test
+    void listDisputeMessages_delegatesToRepo() {
+        when(disputeMessageRepo.findByDisputeIdOrderByCreatedAtAsc(1L)).thenReturn(List.of());
+        assertEquals(0, service.listDisputeMessages(1L).size());
+    }
+
+    // ─── Analytics ──────────────────────────────────────────────
+
+    @Test
+    void getStoreAnalytics_computesMetrics() {
+        when(salesSnapshotRepo.sumRevenueByStoreAndDateRange(eq(1L), any(), any()))
+                .thenReturn(new BigDecimal("50000"));
+        when(salesSnapshotRepo.sumOrdersByStoreAndDateRange(eq(1L), any(), any()))
+                .thenReturn(10L);
+        when(salesSnapshotRepo.findByStoreIdAndDateRange(eq(1L), any(), any()))
+                .thenReturn(List.of());
+
+        Map<String, Object> result = service.getStoreAnalytics(1L, 30);
+        assertEquals(new BigDecimal("50000"), result.get("totalRevenue"));
+        assertEquals(10L, result.get("totalOrders"));
+        assertEquals(new BigDecimal("5000.00"), result.get("averageOrderValue"));
+    }
+
+    @Test
+    void getStoreAnalytics_zeroOrders() {
+        when(salesSnapshotRepo.sumRevenueByStoreAndDateRange(eq(1L), any(), any()))
+                .thenReturn(BigDecimal.ZERO);
+        when(salesSnapshotRepo.sumOrdersByStoreAndDateRange(eq(1L), any(), any()))
+                .thenReturn(0L);
+        when(salesSnapshotRepo.findByStoreIdAndDateRange(eq(1L), any(), any()))
+                .thenReturn(List.of());
+
+        Map<String, Object> result = service.getStoreAnalytics(1L, 7);
+        assertEquals(BigDecimal.ZERO, result.get("averageOrderValue"));
+    }
+
+    @Test
+    void getPlatformAnalytics_countsDisputes() {
+        when(disputeRepo.countByStatus(DisputeStatus.OPEN)).thenReturn(3L);
+        when(disputeRepo.countByStatus(DisputeStatus.IN_REVIEW)).thenReturn(2L);
+        when(disputeRepo.countByStatus(DisputeStatus.RESOLVED)).thenReturn(5L);
+        when(disputeRepo.countByStatus(DisputeStatus.CLOSED)).thenReturn(1L);
+        when(disputeRepo.countByStatus(DisputeStatus.ESCALATED)).thenReturn(0L);
+
+        Map<String, Object> result = service.getPlatformAnalytics();
+        Map<String, Object> disputes = (Map<String, Object>) result.get("disputes");
+        assertEquals(3L, disputes.get("open"));
+        assertEquals(2L, disputes.get("inReview"));
+        assertEquals(11L, disputes.get("total"));
+    }
 }

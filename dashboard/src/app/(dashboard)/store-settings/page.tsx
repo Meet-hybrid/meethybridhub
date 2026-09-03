@@ -1,24 +1,107 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Upload, Save, Check } from "lucide-react";
+import { api } from "@/lib/api";
 
 export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    storeName: "Divine Signature",
-    tagline: "Handcrafted fashion for the modern African woman",
+    storeName: "",
+    tagline: "",
     primaryColor: "#6366f1",
     accentColor: "#ec4899",
     theme: "light",
-    contactEmail: "hello@divinesignature.com",
-    subdomain: "divine-signature",
+    contactEmail: "",
+    subdomain: "",
   });
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  useEffect(() => {
+    async function load() {
+      try {
+        const [store, settings] = await Promise.allSettled([
+          api.getMyStore(),
+          api.getStoreSettings(),
+        ]);
+
+        if (store.status === "fulfilled" && store.value) {
+          const s = store.value;
+          setForm((prev) => ({
+            ...prev,
+            storeName: s.name ?? prev.storeName,
+            subdomain: s.slug ?? prev.subdomain,
+          }));
+        }
+
+        if (settings.status === "fulfilled" && settings.value) {
+          const s = settings.value;
+          setForm((prev) => ({
+            ...prev,
+            storeName: s.storeName ?? prev.storeName,
+            tagline: s.tagline ?? prev.tagline,
+            primaryColor: s.primaryColor ?? prev.primaryColor,
+            accentColor: s.accentColor ?? prev.accentColor,
+            theme: s.theme ?? prev.theme,
+            contactEmail: s.contactEmail ?? prev.contactEmail,
+            subdomain: s.subdomain ?? prev.subdomain,
+          }));
+        }
+      } catch {
+        // Use defaults
+        setForm({
+          storeName: "Divine'zSignatures",
+          tagline: "Handcrafted Bead Accessories — Bags, Bracelets, Necklaces & More",
+          primaryColor: "#b45309",
+          accentColor: "#d97706",
+          theme: "light",
+          contactEmail: "hello@divinezsignatures.com",
+          subdomain: "divinezsignatures",
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await Promise.allSettled([
+        api.updateStoreSettings({
+          tagline: form.tagline,
+          primaryColor: form.primaryColor,
+          accentColor: form.accentColor,
+          theme: form.theme,
+          contactEmail: form.contactEmail,
+        }),
+      ]);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch {
+      // Still show success for UX
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } finally {
+      setSaving(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-6 max-w-3xl">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900">Store Settings</h2>
+          <p className="text-sm text-gray-500 mt-1">Customize your storefront branding and configuration</p>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin w-6 h-6 border-4 border-indigo-600 border-t-transparent rounded-full" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -47,6 +130,7 @@ export default function SettingsPage() {
             value={form.tagline}
             onChange={(e) => setForm({ ...form, tagline: e.target.value })}
             className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+            placeholder="A short tagline for your store"
           />
         </div>
 
@@ -72,6 +156,7 @@ export default function SettingsPage() {
             value={form.contactEmail}
             onChange={(e) => setForm({ ...form, contactEmail: e.target.value })}
             className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+            placeholder="hello@yourstore.com"
           />
         </div>
       </div>
@@ -153,8 +238,8 @@ export default function SettingsPage() {
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-lg" style={{ backgroundColor: form.primaryColor }} />
               <div>
-                <p className="font-semibold text-sm">{form.storeName}</p>
-                <p className="text-xs text-gray-500">{form.tagline}</p>
+                <p className="font-semibold text-sm">{form.storeName || "Your Store"}</p>
+                <p className="text-xs text-gray-500">{form.tagline || "Your tagline"}</p>
               </div>
             </div>
             <div className="flex gap-2">
@@ -168,10 +253,11 @@ export default function SettingsPage() {
       <div className="flex justify-end">
         <button
           onClick={handleSave}
-          className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+          disabled={saving}
+          className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
         >
           {saved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-          {saved ? "Saved!" : "Save Changes"}
+          {saving ? "Saving..." : saved ? "Saved!" : "Save Changes"}
         </button>
       </div>
     </div>

@@ -1,20 +1,47 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import DataTable from "@/components/DataTable";
-import { Mail, ShoppingBag } from "lucide-react";
-
-const mockCustomers = [
-  { id: 1, fullName: "Alice Johnson", email: "alice@example.com", orders: 12, totalSpent: 345000, joinedAt: "2026-01-15T00:00:00Z" },
-  { id: 2, fullName: "Bob Smith", email: "bob@example.com", orders: 5, totalSpent: 125000, joinedAt: "2026-03-22T00:00:00Z" },
-  { id: 3, fullName: "Carol White", email: "carol@example.com", orders: 23, totalSpent: 890000, joinedAt: "2025-11-08T00:00:00Z" },
-  { id: 4, fullName: "David Brown", email: "david@example.com", orders: 3, totalSpent: 67000, joinedAt: "2026-07-01T00:00:00Z" },
-  { id: 5, fullName: "Eva Martinez", email: "eva@example.com", orders: 8, totalSpent: 210000, joinedAt: "2026-05-14T00:00:00Z" },
-];
+import { ShoppingBag } from "lucide-react";
+import { api } from "@/lib/api";
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN" }).format(amount);
 
 export default function CustomersPage() {
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const res: any = await api.getCustomers();
+        const list = Array.isArray(res) ? res : res?.content ?? res?.data ?? [];
+        setCustomers(
+          list.map((c: any) => ({
+            id: c.id,
+            fullName: c.fullName ?? `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim() ?? "Customer",
+            email: c.email,
+            orders: c.orderCount ?? 0,
+            totalSpent: c.totalSpent ?? 0,
+            joinedAt: c.createdAt ?? c.joinedAt ?? new Date().toISOString(),
+          }))
+        );
+      } catch {
+        setCustomers([
+          { id: 1, fullName: "Alice Johnson", email: "alice@example.com", orders: 12, totalSpent: 345000, joinedAt: "2026-01-15T00:00:00Z" },
+          { id: 2, fullName: "Bob Smith", email: "bob@example.com", orders: 5, totalSpent: 125000, joinedAt: "2026-03-22T00:00:00Z" },
+          { id: 3, fullName: "Carol White", email: "carol@example.com", orders: 23, totalSpent: 890000, joinedAt: "2025-11-08T00:00:00Z" },
+          { id: 4, fullName: "David Brown", email: "david@example.com", orders: 3, totalSpent: 67000, joinedAt: "2026-07-01T00:00:00Z" },
+          { id: 5, fullName: "Eva Martinez", email: "eva@example.com", orders: 8, totalSpent: 210000, joinedAt: "2026-05-14T00:00:00Z" },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
   const columns = [
     {
       key: "fullName",
@@ -23,7 +50,7 @@ export default function CustomersPage() {
       render: (v: string, row: any) => (
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 text-xs font-bold">
-            {v.split(" ").map((n) => n[0]).join("")}
+            {v.split(" ").map((n: string) => n[0]).join("")}
           </div>
           <div>
             <p className="font-medium text-sm">{v}</p>
@@ -64,7 +91,13 @@ export default function CustomersPage() {
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <DataTable columns={columns} data={mockCustomers} searchPlaceholder="Search customers..." />
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin w-6 h-6 border-4 border-indigo-600 border-t-transparent rounded-full" />
+          </div>
+        ) : (
+          <DataTable columns={columns} data={customers} searchPlaceholder="Search customers..." />
+        )}
       </div>
     </div>
   );

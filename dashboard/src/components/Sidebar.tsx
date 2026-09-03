@@ -23,7 +23,7 @@ const navItems = [
   { href: "/custom-orders", label: "Custom Orders", icon: MessageSquare },
   { href: "/customers", label: "Customers", icon: Users },
   { href: "/reviews", label: "Reviews", icon: Star },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/store-settings", label: "Store Settings", icon: Settings },
 ];
 
 export default function Sidebar() {

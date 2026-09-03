@@ -1,28 +1,133 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MessageSquare, Send, DollarSign } from "lucide-react";
 import DataTable, { StatusBadge } from "@/components/DataTable";
-
-const mockRequests = [
-  { id: 1, customer: "Amara Okafor", title: "Custom wedding gown with lace details", status: "OPEN", budgetMax: 85000, createdAt: "2026-09-01T08:00:00Z" },
-  { id: 2, customer: "Tunde Bakare", title: "Agbada set for traditional engagement", status: "IN_REVIEW", budgetMax: 120000, createdAt: "2026-08-31T15:30:00Z" },
-  { id: 3, customer: "Nneka Eze", title: "Matching family outfits for Christmas", status: "QUOTED", budgetMax: 200000, createdAt: "2026-08-30T10:00:00Z" },
-  { id: 4, customer: "Chidi Nwosu", title: "Bespoke suit with unique fabric", status: "ACCEPTED", budgetMax: 95000, createdAt: "2026-08-28T09:15:00Z" },
-];
-
-const mockMessages = [
-  { id: 1, senderId: 2, content: "Hello! I can work with the lace design you described. What color palette are you thinking?", createdAt: "2026-09-01T10:00:00Z" },
-  { id: 2, senderId: 1, content: "I was thinking champagne and gold. Can you share some examples?", createdAt: "2026-09-01T10:30:00Z" },
-  { id: 3, senderId: 2, content: "Of course! I'll send some inspiration boards shortly.", createdAt: "2026-09-01T11:00:00Z" },
-];
+import { api } from "@/lib/api";
 
 export default function CustomOrdersPage() {
+  const [requests, setRequests] = useState<any[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<"details" | "chat">("details");
+  const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [quoteForm, setQuoteForm] = useState({ price: "", estimatedDays: "", notes: "" });
   const [showQuoteForm, setShowQuoteForm] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [sendingMessage, setSendingMessage] = useState(false);
+
+  const loadRequests = async () => {
+    setLoading(true);
+    try {
+      const res: any = await api.getCustomOrders();
+      const list = Array.isArray(res) ? res : res?.content ?? res?.data ?? [];
+      setRequests(
+        list.map((r: any) => ({
+          id: r.id,
+          customer: r.customer?.fullName ?? r.customerName ?? "Customer",
+          title: r.title,
+          status: r.status,
+          budgetMax: r.budgetMax,
+          createdAt: r.createdAt,
+        }))
+      );
+    } catch {
+      setRequests([
+        { id: 1, customer: "Amara Okafor", title: "Custom wedding gown with lace details", status: "OPEN", budgetMax: 85000, createdAt: "2026-09-01T08:00:00Z" },
+        { id: 2, customer: "Tunde Bakare", title: "Agbada set for traditional engagement", status: "IN_REVIEW", budgetMax: 120000, createdAt: "2026-08-31T15:30:00Z" },
+        { id: 3, customer: "Nneka Eze", title: "Matching family outfits for Christmas", status: "QUOTED", budgetMax: 200000, createdAt: "2026-08-30T10:00:00Z" },
+        { id: 4, customer: "Chidi Nwosu", title: "Bespoke suit with unique fabric", status: "ACCEPTED", budgetMax: 95000, createdAt: "2026-08-28T09:15:00Z" },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadMessages = async (requestId: number) => {
+    try {
+      const res: any = await api.getMessages(requestId);
+      const list = Array.isArray(res) ? res : res?.content ?? res?.data ?? [];
+      setMessages(
+        list.map((m: any) => ({
+          id: m.id,
+          senderId: m.senderId,
+          content: m.content,
+          createdAt: m.createdAt,
+        }))
+      );
+    } catch {
+      setMessages([
+        { id: 1, senderId: 2, content: "Hello! I can work with the lace design you described. What color palette are you thinking?", createdAt: "2026-09-01T10:00:00Z" },
+        { id: 2, senderId: 1, content: "I was thinking champagne and gold. Can you share some examples?", createdAt: "2026-09-01T10:30:00Z" },
+        { id: 3, senderId: 2, content: "Of course! I'll send some inspiration boards shortly.", createdAt: "2026-09-01T11:00:00Z" },
+      ]);
+    }
+  };
+
+  useEffect(() => {
+    loadRequests();
+  }, []);
+
+  useEffect(() => {
+    if (selectedRequest) {
+      loadMessages(selectedRequest.id);
+    }
+  }, [selectedRequest?.id]);
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !selectedRequest) return;
+    setSendingMessage(true);
+    try {
+      await api.sendMessage(selectedRequest.id, newMessage.trim());
+      setNewMessage("");
+      loadMessages(selectedRequest.id);
+    } catch {
+      // Optimistically add message
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          senderId: 2,
+          content: newMessage.trim(),
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+      setNewMessage("");
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
+  const handleSendQuote = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedRequest) return;
+    try {
+      await api.createQuote(selectedRequest.id, {
+        price: Number(quoteForm.price),
+        estimatedDays: Number(quoteForm.estimatedDays),
+        notes: quoteForm.notes,
+      });
+      setShowQuoteForm(false);
+      setQuoteForm({ price: "", estimatedDays: "", notes: "" });
+      loadRequests();
+    } catch {
+      alert("Failed to send quote. Is the backend running?");
+    }
+  };
+
+  const handleStatusChange = async (requestId: number, status: string) => {
+    try {
+      await api.updateCustomOrderStatus(requestId, status);
+      setRequests((prev) =>
+        prev.map((r) => (r.id === requestId ? { ...r, status } : r))
+      );
+      if (selectedRequest?.id === requestId) {
+        setSelectedRequest((prev: any) => prev ? { ...prev, status } : prev);
+      }
+    } catch {
+      alert("Failed to update status.");
+    }
+  };
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN" }).format(amount);
@@ -54,7 +159,13 @@ export default function CustomOrdersPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <DataTable columns={columns} data={mockRequests} onRowClick={setSelectedRequest} />
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin w-6 h-6 border-4 border-indigo-600 border-t-transparent rounded-full" />
+            </div>
+          ) : (
+            <DataTable columns={columns} data={requests} onRowClick={setSelectedRequest} />
+          )}
         </div>
 
         {selectedRequest ? (
@@ -94,27 +205,53 @@ export default function CustomOrdersPage() {
                   <div className="col-span-2"><span className="text-gray-500">Description</span><p className="mt-1">{selectedRequest.title}</p></div>
                 </div>
 
-                {selectedRequest.status === "OPEN" || selectedRequest.status === "IN_REVIEW" ? (
-                  <button
-                    onClick={() => setShowQuoteForm(true)}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
-                  >
-                    <DollarSign className="w-4 h-4" /> Send Quote
-                  </button>
-                ) : selectedRequest.status === "QUOTED" ? (
+                {(selectedRequest.status === "OPEN" || selectedRequest.status === "IN_REVIEW") && (
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => setShowQuoteForm(true)}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+                    >
+                      <DollarSign className="w-4 h-4" /> Send Quote
+                    </button>
+                    <button
+                      onClick={() => handleStatusChange(selectedRequest.id, "IN_REVIEW")}
+                      className="w-full py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Mark as In Review
+                    </button>
+                  </div>
+                )}
+                {selectedRequest.status === "QUOTED" && (
                   <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-sm text-emerald-700">
                     Quote sent — awaiting customer response
                   </div>
-                ) : selectedRequest.status === "ACCEPTED" ? (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
-                    Quote accepted — ready to convert to order
+                )}
+                {selectedRequest.status === "ACCEPTED" && (
+                  <div className="space-y-2">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
+                      Quote accepted — ready to convert to order
+                    </div>
+                    <button
+                      onClick={() => handleStatusChange(selectedRequest.id, "CONVERTED")}
+                      className="w-full py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors"
+                    >
+                      Convert to Order
+                    </button>
                   </div>
-                ) : null}
+                )}
+                {selectedRequest.status !== "REJECTED" && selectedRequest.status !== "CONVERTED" && (
+                  <button
+                    onClick={() => handleStatusChange(selectedRequest.id, "REJECTED")}
+                    className="w-full py-2 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+                  >
+                    Reject Request
+                  </button>
+                )}
               </div>
             ) : (
               <div className="flex flex-col flex-1">
                 <div className="flex-1 p-4 space-y-3 overflow-auto" style={{ maxHeight: 300 }}>
-                  {mockMessages.map((msg) => (
+                  {messages.map((msg) => (
                     <div
                       key={msg.id}
                       className={`flex ${msg.senderId === 2 ? "justify-end" : "justify-start"}`}
@@ -140,10 +277,15 @@ export default function CustomOrdersPage() {
                       type="text"
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
                       placeholder="Type a message..."
                       className="flex-1 px-4 py-2 border border-gray-300 rounded-full text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                     />
-                    <button className="p-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors">
+                    <button
+                      onClick={handleSendMessage}
+                      disabled={sendingMessage || !newMessage.trim()}
+                      className="p-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                    >
                       <Send className="w-4 h-4" />
                     </button>
                   </div>
@@ -162,11 +304,13 @@ export default function CustomOrdersPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl w-full max-w-md mx-4 p-6">
             <h3 className="text-lg font-semibold mb-4">Send Quote</h3>
-            <form className="space-y-4">
+            <form onSubmit={handleSendQuote} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Price (NGN)</label>
                 <input
                   type="number"
+                  required
+                  min="0"
                   value={quoteForm.price}
                   onChange={(e) => setQuoteForm({ ...quoteForm, price: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
@@ -177,6 +321,8 @@ export default function CustomOrdersPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Days</label>
                 <input
                   type="number"
+                  required
+                  min="1"
                   value={quoteForm.estimatedDays}
                   onChange={(e) => setQuoteForm({ ...quoteForm, estimatedDays: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"

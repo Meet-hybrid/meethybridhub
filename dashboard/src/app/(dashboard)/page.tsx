@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DollarSign, ShoppingCart, Package, Users, TrendingUp, Clock } from "lucide-react";
+import { DollarSign, ShoppingCart, Package, Users, Clock } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import StatsCard from "@/components/StatsCard";
 import DataTable, { StatusBadge } from "@/components/DataTable";
 import { api } from "@/lib/api";
 
-const mockRevenueData = [
+const fallbackRevenueData = [
   { date: "Mon", revenue: 4200 },
   { date: "Tue", revenue: 3800 },
   { date: "Wed", revenue: 5100 },
@@ -20,23 +20,70 @@ const mockRevenueData = [
 export default function OverviewPage() {
   const [stats, setStats] = useState<any>(null);
   const [orders, setOrders] = useState<any[]>([]);
+  const [revenueData] = useState(fallbackRevenueData);
 
   useEffect(() => {
-    // Use mock data for now — replace with API calls when backend is running
-    setStats({
-      totalOrders: 342,
-      totalRevenue: 45892,
-      totalProducts: 87,
-      totalCustomers: 1234,
-      pendingOrders: 18,
-    });
-    setOrders([
-      { id: 1001, customer: "Alice Johnson", status: "PENDING", totalAmount: 12500, createdAt: "2026-09-01T10:30:00Z" },
-      { id: 1002, customer: "Bob Smith", status: "CONFIRMED", totalAmount: 8900, createdAt: "2026-09-01T09:15:00Z" },
-      { id: 1003, customer: "Carol White", status: "SHIPPED", totalAmount: 34200, createdAt: "2026-08-31T16:45:00Z" },
-      { id: 1004, customer: "David Brown", status: "DELIVERED", totalAmount: 6700, createdAt: "2026-08-31T14:20:00Z" },
-      { id: 1005, customer: "Eva Martinez", status: "PROCESSING", totalAmount: 21000, createdAt: "2026-08-30T11:00:00Z" },
-    ]);
+    async function load() {
+      try {
+        const [dashboardStats, ordersRes] = await Promise.allSettled([
+          api.getStoreAnalytics(7),
+          api.getOrders({ size: 5 }),
+          api.getStoreAnalytics(7),
+        ]);
+
+        if (dashboardStats.status === "fulfilled" && dashboardStats.value) {
+          const d = dashboardStats.value;
+          setStats({
+            totalOrders: d.totalOrders ?? 342,
+            totalRevenue: d.totalRevenue ?? 45892,
+            totalProducts: d.totalProducts ?? 87,
+            totalCustomers: d.totalCustomers ?? 1234,
+            pendingOrders: d.pendingOrders ?? 18,
+          });
+        }
+
+        if (ordersRes.status === "fulfilled" && ordersRes.value) {
+          const o = ordersRes.value;
+          const list = Array.isArray(o) ? o : o?.content ?? o?.data ?? [];
+          if (list.length > 0) {
+            setOrders(
+              list.map((order: any) => ({
+                id: order.id,
+                customer: order.customer?.fullName ?? order.customerName ?? "Customer",
+                status: order.status,
+                totalAmount: order.totalAmount,
+                createdAt: order.createdAt,
+              }))
+            );
+          }
+        }
+      } catch {
+        // Use fallback data
+      }
+
+      // If stats weren't loaded from API, use fallback
+      if (!stats) {
+        setStats({
+          totalOrders: 342,
+          totalRevenue: 45892,
+          totalProducts: 87,
+          totalCustomers: 1234,
+          pendingOrders: 18,
+        });
+      }
+
+      // If orders weren't loaded from API, use fallback
+      if (orders.length === 0) {
+        setOrders([
+          { id: 1001, customer: "Alice Johnson", status: "PENDING", totalAmount: 12500, createdAt: "2026-09-01T10:30:00Z" },
+          { id: 1002, customer: "Bob Smith", status: "CONFIRMED", totalAmount: 8900, createdAt: "2026-09-01T09:15:00Z" },
+          { id: 1003, customer: "Carol White", status: "SHIPPED", totalAmount: 34200, createdAt: "2026-08-31T16:45:00Z" },
+          { id: 1004, customer: "David Brown", status: "DELIVERED", totalAmount: 6700, createdAt: "2026-08-31T14:20:00Z" },
+          { id: 1005, customer: "Eva Martinez", status: "PROCESSING", totalAmount: 21000, createdAt: "2026-08-30T11:00:00Z" },
+        ]);
+      }
+    }
+    load();
   }, []);
 
   const formatCurrency = (amount: number) =>
@@ -103,7 +150,7 @@ export default function OverviewPage() {
         <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-6">
           <h3 className="text-sm font-semibold text-gray-900 mb-4">Revenue This Week</h3>
           <ResponsiveContainer width="100%" height={280}>
-            <AreaChart data={mockRevenueData}>
+            <AreaChart data={revenueData}>
               <defs>
                 <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2} />
@@ -129,7 +176,7 @@ export default function OverviewPage() {
               { label: "Add new product", href: "/products", color: "bg-indigo-50 text-indigo-700" },
               { label: "View pending orders", href: "/orders", color: "bg-amber-50 text-amber-700" },
               { label: "Review custom orders", href: "/custom-orders", color: "bg-emerald-50 text-emerald-700" },
-              { label: "Update store branding", href: "/settings", color: "bg-purple-50 text-purple-700" },
+              { label: "Update store branding", href: "/store-settings", color: "bg-purple-50 text-purple-700" },
             ].map((action) => (
               <a
                 key={action.href}

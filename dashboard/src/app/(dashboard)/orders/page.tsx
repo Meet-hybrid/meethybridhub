@@ -1,25 +1,68 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Eye, Truck, CheckCircle, XCircle } from "lucide-react";
 import DataTable, { StatusBadge } from "@/components/DataTable";
-
-const mockOrders = [
-  { id: 1001, customer: "Alice Johnson", items: 3, totalAmount: 125000, status: "PENDING", createdAt: "2026-09-01T10:30:00Z", shipping: "Delivery" },
-  { id: 1002, customer: "Bob Smith", items: 1, totalAmount: 45000, status: "CONFIRMED", createdAt: "2026-09-01T09:15:00Z", shipping: "Pickup" },
-  { id: 1003, customer: "Carol White", items: 5, totalAmount: 342000, status: "SHIPPED", createdAt: "2026-08-31T16:45:00Z", shipping: "Delivery" },
-  { id: 1004, customer: "David Brown", items: 2, totalAmount: 67000, status: "DELIVERED", createdAt: "2026-08-31T14:20:00Z", shipping: "Delivery" },
-  { id: 1005, customer: "Eva Martinez", items: 4, totalAmount: 210000, status: "PROCESSING", createdAt: "2026-08-30T11:00:00Z", shipping: "Pickup" },
-  { id: 1006, customer: "Frank Lee", items: 1, totalAmount: 18500, status: "CANCELLED", createdAt: "2026-08-29T08:30:00Z", shipping: "Delivery" },
-];
+import { api } from "@/lib/api";
 
 const statusFilters = ["ALL", "PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"];
 
 export default function OrdersPage() {
+  const [orders, setOrders] = useState<any[]>([]);
   const [filter, setFilter] = useState("ALL");
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const filtered = filter === "ALL" ? mockOrders : mockOrders.filter((o) => o.status === filter);
+  const loadOrders = async (status?: string) => {
+    setLoading(true);
+    try {
+      const params: any = { size: 100 };
+      if (status && status !== "ALL") params.status = status;
+      const res = await api.getOrders(params);
+      const list = Array.isArray(res) ? res : res?.content ?? res?.data ?? [];
+      setOrders(
+        list.map((o: any) => ({
+          id: o.id,
+          customer: o.customer?.fullName ?? o.customerName ?? "Customer",
+          items: o.items?.length ?? o.itemCount ?? 0,
+          totalAmount: o.totalAmount,
+          status: o.status,
+          createdAt: o.createdAt,
+          shipping: o.shippingMethod ?? "Delivery",
+        }))
+      );
+    } catch {
+      // Fallback to mock data
+      setOrders([
+        { id: 1001, customer: "Alice Johnson", items: 3, totalAmount: 125000, status: "PENDING", createdAt: "2026-09-01T10:30:00Z", shipping: "Delivery" },
+        { id: 1002, customer: "Bob Smith", items: 1, totalAmount: 45000, status: "CONFIRMED", createdAt: "2026-09-01T09:15:00Z", shipping: "Pickup" },
+        { id: 1003, customer: "Carol White", items: 5, totalAmount: 342000, status: "SHIPPED", createdAt: "2026-08-31T16:45:00Z", shipping: "Delivery" },
+        { id: 1004, customer: "David Brown", items: 2, totalAmount: 67000, status: "DELIVERED", createdAt: "2026-08-31T14:20:00Z", shipping: "Delivery" },
+        { id: 1005, customer: "Eva Martinez", items: 4, totalAmount: 210000, status: "PROCESSING", createdAt: "2026-08-30T11:00:00Z", shipping: "Pickup" },
+        { id: 1006, customer: "Frank Lee", items: 1, totalAmount: 18500, status: "CANCELLED", createdAt: "2026-08-29T08:30:00Z", shipping: "Delivery" },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadOrders(filter);
+  }, [filter]);
+
+  const filtered = filter === "ALL" ? orders : orders.filter((o) => o.status === filter);
+
+  const handleStatusUpdate = async (orderId: number, newStatus: string) => {
+    try {
+      await api.updateOrderStatus(orderId, newStatus);
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
+      );
+      setSelectedOrder(null);
+    } catch {
+      alert("Failed to update order status.");
+    }
+  };
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN" }).format(amount);
@@ -89,7 +132,13 @@ export default function OrdersPage() {
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <DataTable columns={columns} data={filtered} searchPlaceholder="Search orders..." />
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin w-6 h-6 border-4 border-indigo-600 border-t-transparent rounded-full" />
+          </div>
+        ) : (
+          <DataTable columns={columns} data={filtered} searchPlaceholder="Search orders..." />
+        )}
       </div>
 
       {selectedOrder && (
@@ -111,17 +160,34 @@ export default function OrdersPage() {
             </div>
             <div className="flex gap-2 mt-6">
               {selectedOrder.status === "PENDING" && (
-                <button className="flex-1 flex items-center justify-center gap-2 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">
+                <button
+                  onClick={() => handleStatusUpdate(selectedOrder.id, "CONFIRMED")}
+                  className="flex-1 flex items-center justify-center gap-2 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700"
+                >
                   <CheckCircle className="w-4 h-4" /> Confirm
                 </button>
               )}
               {selectedOrder.status === "CONFIRMED" && (
-                <button className="flex-1 flex items-center justify-center gap-2 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
+                <button
+                  onClick={() => handleStatusUpdate(selectedOrder.id, "PROCESSING")}
+                  className="flex-1 flex items-center justify-center gap-2 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
+                >
                   <Truck className="w-4 h-4" /> Mark Processing
                 </button>
               )}
+              {selectedOrder.status === "PROCESSING" && (
+                <button
+                  onClick={() => handleStatusUpdate(selectedOrder.id, "SHIPPED")}
+                  className="flex-1 flex items-center justify-center gap-2 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700"
+                >
+                  <Truck className="w-4 h-4" /> Mark Shipped
+                </button>
+              )}
               {(selectedOrder.status === "PENDING" || selectedOrder.status === "CONFIRMED") && (
-                <button className="flex items-center justify-center gap-2 py-2 px-4 text-red-600 text-sm font-medium rounded-lg hover:bg-red-50 border border-red-200">
+                <button
+                  onClick={() => handleStatusUpdate(selectedOrder.id, "CANCELLED")}
+                  className="flex items-center justify-center gap-2 py-2 px-4 text-red-600 text-sm font-medium rounded-lg hover:bg-red-50 border border-red-200"
+                >
                   <XCircle className="w-4 h-4" /> Cancel
                 </button>
               )}

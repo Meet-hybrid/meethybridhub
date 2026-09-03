@@ -53,7 +53,7 @@ class ApiClient {
   }
 
   getMe() {
-    return this.request<any>("/api/v1/auth/me");
+    return this.request<any>("/api/v1/users/me");
   }
 
   // Store
@@ -169,35 +169,128 @@ class ApiClient {
 
   // Reviews
   getStoreReviews() {
-    return this.request<any[]>("/api/v1/discovery/stores/me/reviews");
+    return this.getMyStore().then((store) => this.request<any[]>(`/api/v1/discovery/stores/${store.id}/reviews`));
   }
 
   // Analytics
   getStoreAnalytics(days?: number) {
     const qs = days ? `?days=${days}` : "";
-    return this.request<any>(`/api/v1/admin/analytics/stores/me${qs}`);
+    return this.request<any>(`/api/v1/stores/me/analytics${qs}`);
   }
 
-  // Super Admin
+  // Super Admin — Analytics
   getPlatformAnalytics() {
     return this.request<any>("/api/v1/admin/analytics/platform");
   }
 
+  // Super Admin — Stores
+  getAllStores(params?: { page?: number; size?: number; status?: string }) {
+    const qs = new URLSearchParams();
+    if (params?.page) qs.set("page", String(params.page));
+    if (params?.size) qs.set("size", String(params.size));
+    if (params?.status) qs.set("status", params.status);
+    return this.request<any>(`/api/v1/admin/stores?${qs}`);
+  }
+
+  getStore(id: number) {
+    return this.request<any>(`/api/v1/admin/stores/${id}`);
+  }
+
+  updateStoreStatus(id: number, status: string) {
+    return this.request<any>(`/api/v1/admin/stores/${id}/status`, {
+      method: "PUT",
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  // Super Admin — Users
+  getAllUsers(params?: { page?: number; size?: number; role?: string }) {
+    const qs = new URLSearchParams();
+    if (params?.page) qs.set("page", String(params.page));
+    if (params?.size) qs.set("size", String(params.size));
+    if (params?.role) qs.set("role", params.role);
+    return this.request<any>(`/api/v1/admin/users?${qs}`);
+  }
+
+  createAdminUser(data: { email: string; fullName: string; password: string; roles: string[] }) {
+    return this.request<any>("/api/v1/admin/users", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  updateUserStatus(id: number, status: string) {
+    return this.request<any>(`/api/v1/admin/users/${id}/status`, {
+      method: "PUT",
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  // Super Admin — Disputes
+  getDisputes(params?: { status?: string }) {
+    const qs = new URLSearchParams();
+    if (params?.status) qs.set("status", params.status);
+    return this.request<any>(`/api/v1/admin/disputes?${qs}`);
+  }
+
+  resolveDispute(id: number, resolution: string) {
+    return this.request<any>(`/api/v1/admin/disputes/${id}/status`, {
+      method: "PUT",
+      body: JSON.stringify({ status: resolution === "DISMISSED" ? "DISMISSED" : "RESOLVED", resolution }),
+    });
+  }
+
+  // Super Admin — Config
   getPlatformConfig() {
     return this.request<any>("/api/v1/admin/config");
   }
 
   updatePlatformConfig(data: any) {
-    return this.request<any>("/api/v1/admin/config", {
+    return Promise.all(Object.entries(data).map(([key, value]) => this.request<any>(`/api/v1/admin/config/${encodeURIComponent(key)}`, {
       method: "PUT",
-      body: JSON.stringify(data),
+      body: JSON.stringify({ value: String(value), description: "Platform configuration" }),
+    })));
+  }
+
+  // Super Admin — Notifications
+  getNotifications(params?: { page?: number; size?: number; unread?: boolean }) {
+    const qs = new URLSearchParams();
+    if (params?.page) qs.set("page", String(params.page));
+    if (params?.size) qs.set("size", String(params.size));
+    if (params?.unread !== undefined) qs.set("unread", String(params.unread));
+    return this.request<any>(`/api/v1/admin/notifications?${qs}`);
+  }
+
+  getUnreadCount() {
+    return this.request<any>("/api/v1/admin/notifications/unread-count");
+  }
+
+  markNotificationRead(id: number) {
+    return this.request<void>(`/api/v1/admin/notifications/${id}/read`, {
+      method: "PUT",
     });
   }
 
-  getDisputes(params?: { status?: string }) {
+  markAllNotificationsRead() {
+    return this.request<void>("/api/v1/admin/notifications/read-all", {
+      method: "PUT",
+    });
+  }
+
+  // Super Admin — Audit Log
+  getAuditLogs(params?: { page?: number; size?: number; action?: string; userId?: number; from?: string; to?: string }) {
     const qs = new URLSearchParams();
-    if (params?.status) qs.set("status", params.status);
-    return this.request<any>(`/api/v1/admin/disputes?${qs}`);
+    if (params?.page) qs.set("page", String(params.page));
+    if (params?.size) qs.set("size", String(params.size));
+    if (params?.action) qs.set("action", params.action);
+    if (params?.userId) qs.set("userId", String(params.userId));
+    if (params?.from) qs.set("from", params.from);
+    if (params?.to) qs.set("to", params.to);
+    return this.request<any>(`/api/v1/admin/audit-logs?${qs}`);
+  }
+
+  getAuditLog(id: number) {
+    return this.request<any>(`/api/v1/admin/audit-logs/${id}`);
   }
 }
 
