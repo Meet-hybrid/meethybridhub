@@ -11,13 +11,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Full-context HTTP smoke tests: boots the real application (including the
- * security filter chain) and verifies the two endpoints that must always work.
- *
- * MockMvc simulates HTTP calls without opening a real socket — fast, and
- * sufficient to prove wiring end-to-end.
- */
+
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -41,8 +35,8 @@ class ApiSmokeTest {
 
     @Test
     void unknownPathReturns404Not500() throws Exception {
-        // Guards against the classic blanket-@ExceptionHandler bug: an unknown URL
-        // must be a 404 (NoResourceFoundException), never a misleading 500.
+
+
         mockMvc.perform(get("/api/v1/does-not-exist"))
                 .andExpect(status().isNotFound());
     }

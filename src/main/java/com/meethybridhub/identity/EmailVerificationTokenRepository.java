@@ -10,9 +10,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Repository for {@link EmailVerificationToken}.
- */
+
 @Repository
 public interface EmailVerificationTokenRepository extends JpaRepository<EmailVerificationToken, Long> {
 
@@ -20,15 +18,11 @@ public interface EmailVerificationTokenRepository extends JpaRepository<EmailVer
 
     List<EmailVerificationToken> findByUserId(Long userId);
 
-    /**
-     * Bulk-deletes every token that expired before {@code now}.
-     * Called by the daily cleanup job (TokenCleanupService); returns the
-     * number of deleted rows. The expires_at index makes this cheap.
-     */
+
     @Modifying
     @Query("DELETE FROM EmailVerificationToken t WHERE t.expiresAt < :now")
     int deleteExpired(@Param("now") Instant now);
 
-    /** Invalidates outstanding (unused) tokens before issuing a fresh one on resend. */
+
     void deleteByUserIdAndUsedAtIsNull(Long userId);
 }

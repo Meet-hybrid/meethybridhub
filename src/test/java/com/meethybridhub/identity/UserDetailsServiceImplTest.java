@@ -12,14 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-/**
- * Pure unit tests for {@link UserDetailsServiceImpl} with a mocked
- * {@link UserRepository} — no Spring context.
- *
- * Focuses on {@code loadUserForAuthentication}'s business validation
- * (email verified + account ACTIVE) and the plain {@code loadUserByUsername}
- * mapping used by Spring Security's DaoAuthenticationProvider.
- */
+
 class UserDetailsServiceImplTest {
 
     private final UserRepository userRepository = mock(UserRepository.class);
@@ -50,7 +43,7 @@ class UserDetailsServiceImplTest {
     @Test
     void loadUserForAuthenticationRejectsUnverifiedEmail() {
         User user = new User("bob@example.com", "hash", "Bob");
-        user.setStatus(User.UserStatus.ACTIVE); // status fine, but email never verified
+        user.setStatus(User.UserStatus.ACTIVE);
         when(userRepository.findByEmail("bob@example.com")).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> service.loadUserForAuthentication("bob@example.com"))

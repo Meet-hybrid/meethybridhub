@@ -26,13 +26,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-/**
- * Unit tests for the dormant platform-charge module:
- *   - while dormant (enabled=false): charge() and sweep() are no-ops
- *   - when enabled: the flat fee is persisted and audited
- *   - idempotent: a transaction can never be charged twice
- *   - the sweep charges only refs that aren't already charged
- */
+
 @ExtendWith(MockitoExtension.class)
 class PlatformChargeServiceTest {
 
@@ -107,8 +101,8 @@ class PlatformChargeServiceTest {
 
     @Test
     void sweepIsNoOpWithNoSourcesRegistered() {
-        // The exact state the module ships in: no ChargeableTransactionSource
-        // implementations exist until the Orders/Payments phase lands.
+
+
         PlatformChargeService noSources = new PlatformChargeService(
                 platformChargeRepository, List.of(), auditLogService);
         ReflectionTestUtils.setField(noSources, "enabled", true);
@@ -139,7 +133,7 @@ class PlatformChargeServiceTest {
                 .thenReturn(List.of(
                         new ChargeableTransaction("TXN-1", new BigDecimal("1000.00")),
                         new ChargeableTransaction("TXN-2", new BigDecimal("2000.00"))));
-        // TXN-1 was already charged in a previous sweep; TXN-2 is new.
+
         when(platformChargeRepository.findByTransactionRefIn(anyCollection()))
                 .thenReturn(List.of(platformCharge("TXN-1")));
         when(platformChargeRepository.existsByTransactionRef("TXN-2")).thenReturn(false);

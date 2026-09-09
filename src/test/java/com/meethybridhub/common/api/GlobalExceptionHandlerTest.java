@@ -30,13 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-/**
- * Pure unit tests for {@link GlobalExceptionHandler} — no Spring context.
- *
- * Every handler is a pure "exception → ResponseEntity" translation, so each
- * test constructs the exception directly and asserts the status, the uniform
- * {@link ApiError} envelope, and any headers (e.g. Retry-After).
- */
+
 class GlobalExceptionHandlerTest {
 
     private final GlobalExceptionHandler handler = new GlobalExceptionHandler();
@@ -93,7 +87,7 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void badCredentialsMapsTo401WithGenericMessage() {
-        // Spring's message may carry internals; the handler must never leak them.
+
         ResponseEntity<ApiError> response = handler.handleBadCredentials(
                 new BadCredentialsException("Bad credentials"));
 
@@ -230,7 +224,7 @@ class GlobalExceptionHandlerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
         assertThat(body(response).message()).isEqualTo("An unexpected error occurred");
-        // The root cause (including its message) must never reach the client.
+
         assertThat(body(response).message()).doesNotContain("jdbc:secret://internal");
     }
 }

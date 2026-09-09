@@ -6,15 +6,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 
-/**
- * A revoked refresh token (see V10__revoked_tokens.sql).
- *
- * Only the SHA-256 {@code hash} of the token is stored — never the token
- * itself. {@code expiresAt} mirrors the token's own expiry so the nightly
- * cleanup can purge rows once they would have expired anyway.
- *
- * One row per revoked token (unique hash), so logout is naturally idempotent.
- */
+
 @Entity
 @Table(name = "revoked_tokens")
 @EntityListeners(AuditingEntityListener.class)

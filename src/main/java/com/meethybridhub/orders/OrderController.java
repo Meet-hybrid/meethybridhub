@@ -35,7 +35,7 @@ public class OrderController {
         this.userService = userService;
     }
 
-    /** Guest checkout is allowed; an authenticated caller is attached as customer. */
+
     @PostMapping
     public ResponseEntity<OrderResponse> create(
             @AuthenticationPrincipal UserDetails userDetails,

@@ -69,7 +69,7 @@ public class PaymentService {
             case "refunded" -> PaymentStatus.REFUNDED;
             default -> throw new BadRequestException("Unsupported payment webhook status: " + status);
         };
-        // Webhooks are retried. Reapplying the same terminal state is harmless.
+
         payment.setStatus(next);
         payment.setGatewayResponse(rawPayload);
         if (next == PaymentStatus.PAID) {

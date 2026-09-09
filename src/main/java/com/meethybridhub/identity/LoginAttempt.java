@@ -6,24 +6,13 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 
-/**
- * A single login attempt or email-send event, tracked for rate limiting and
- * account lockout.
- *
- * Maps to the {@code login_attempts} table created in V2__identity.sql (indexed
- * on {@code (email, created_at)} and {@code (ip_address, created_at)}; the
- * {@code purpose} column was added by V6). Records older than 24 hours are
- * purged by the daily maintenance job.
- */
+
 @Entity
 @Table(name = "login_attempts")
 @EntityListeners(AuditingEntityListener.class)
 public class LoginAttempt {
 
-    /**
-     * What kind of event this row records. Counters always filter by purpose
-     * so login lockouts and email-send limits never interfere.
-     */
+
     public enum Purpose {
         LOGIN, EMAIL_SEND
     }
@@ -39,8 +28,7 @@ public class LoginAttempt {
     @Column(nullable = false)
     private String email;
 
-    // Stored as VARCHAR(45) (IPv6 max length) — see V5 migration. H2 has no
-    // INET type, so a plain String keeps prod (validate) and tests in sync.
+
     @Column(name = "ip_address", length = 45)
     private String ipAddress;
 
@@ -59,7 +47,7 @@ public class LoginAttempt {
 
     protected LoginAttempt() {}
 
-    /** Login-attempt row (purpose = LOGIN). */
+
     public LoginAttempt(String email, String ipAddress, String userAgent, boolean success, String failedReason) {
         this(Purpose.LOGIN, email, ipAddress, userAgent, success, failedReason);
     }

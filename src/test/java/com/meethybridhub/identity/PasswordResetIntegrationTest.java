@@ -21,13 +21,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Integration tests for the email-flow follow-up:
- *   - Password reset request (token issued, no account enumeration)
- *   - Password reset confirmation (valid/invalid/expired/replayed tokens)
- *   - Login with the new password after a reset
- *   - Verification email resend (fresh token, old one invalidated)
- */
+
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -75,7 +69,7 @@ class PasswordResetIntegrationTest {
 
     @Test
     void requestResetForUnknownEmailStillReturnsOk() throws Exception {
-        // No account enumeration: unknown email looks identical to a known one.
+
         mockMvc.perform(post("/api/v1/auth/reset-password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\": \"ghost@example.com\"}"))
@@ -98,7 +92,7 @@ class PasswordResetIntegrationTest {
                         .content("{\"token\": \"" + token + "\", \"newPassword\": \"" + NEW_PASSWORD + "\"}"))
                 .andExpect(status().isOk());
 
-        // Old password no longer works, new one does.
+
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\": \"" + EMAIL + "\", \"password\": \"" + PASSWORD + "\"}"))
@@ -146,7 +140,7 @@ class PasswordResetIntegrationTest {
                         .content("{\"token\": \"" + token + "\", \"newPassword\": \"" + NEW_PASSWORD + "\"}"))
                 .andExpect(status().isOk());
 
-        // Same token again -> rejected
+
         mockMvc.perform(post("/api/v1/auth/reset-password/confirm")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"token\": \"" + token + "\", \"newPassword\": \"" + NEW_PASSWORD + "\"}"))
@@ -165,14 +159,14 @@ class PasswordResetIntegrationTest {
                         .content("{\"email\": \"" + EMAIL + "\"}"))
                 .andExpect(status().isOk());
 
-        // The new token verifies the account...
+
         String newToken = verificationTokenRepository.findByUserId(user.getId()).get(0).getToken();
         assertThat(newToken).isNotEqualTo(oldToken);
 
         mockMvc.perform(get("/api/v1/auth/verify").param("token", newToken))
                 .andExpect(status().isOk());
 
-        // ...while the old one was invalidated.
+
         mockMvc.perform(get("/api/v1/auth/verify").param("token", oldToken))
                 .andExpect(status().isBadRequest());
     }
@@ -182,22 +176,22 @@ class PasswordResetIntegrationTest {
         registerAndActivate();
         String oldToken = loginAndGetToken(PASSWORD);
 
-        // Token works before the reset
+
         mockMvc.perform(get("/api/v1/users/me")
                         .header("Authorization", "Bearer " + oldToken))
                 .andExpect(status().isOk());
 
         resetPasswordAndConfirm();
 
-        // The password version was bumped, which is what kills the old token
+
         assertThat(user(EMAIL).getPasswordVersion()).isEqualTo(1);
 
-        // The same token is now rejected
+
         mockMvc.perform(get("/api/v1/users/me")
                         .header("Authorization", "Bearer " + oldToken))
                 .andExpect(status().isForbidden());
 
-        // A fresh login issues a working token
+
         String newToken = loginAndGetToken(NEW_PASSWORD);
         mockMvc.perform(get("/api/v1/users/me")
                         .header("Authorization", "Bearer " + newToken))
@@ -230,7 +224,7 @@ class PasswordResetIntegrationTest {
                                 + "\", \"newPassword\": \"" + NEW_PASSWORD + "\"}"))
                 .andExpect(status().isOk());
 
-        // Both previously issued tokens are dead
+
         mockMvc.perform(get("/api/v1/users/me")
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isForbidden());
@@ -256,9 +250,6 @@ class PasswordResetIntegrationTest {
                 .isEqualTo(countBefore);
     }
 
-    // ------------------------------------------------------------------
-    // Helpers
-    // ------------------------------------------------------------------
 
     private String loginAndGetToken(String password) throws Exception {
         return loginAndGet(password, "accessToken");

@@ -13,18 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Admin user management (Hybrid's Card 3).
- *
- *   GET    /api/v1/admin/users              - list users (filter by status/role)
- *   GET    /api/v1/admin/users/{id}         - user detail
- *   PUT    /api/v1/admin/users/{id}/roles   - set a user's roles
- *   PUT    /api/v1/admin/users/{id}/status  - set a user's account status
- *   DELETE /api/v1/admin/users/{id}         - soft-delete a user account
- *
- * Protected twice: URL rule ({@code hasRole('ADMIN')} in SecurityConfig) and
- * the class-level {@code @PreAuthorize} below (defense in depth).
- */
+
 @RestController
 @RequestMapping("/api/v1/admin/users")
 @PreAuthorize("hasRole('ADMIN')")
@@ -98,7 +87,7 @@ public class AdminController {
         return ResponseEntity.ok(Map.of("message", "User deleted successfully"));
     }
 
-    /** The ID of the authenticated admin performing the action. */
+
     private Long actorId(UserDetails userDetails) {
         return ((AppUser) userDetails).getUser().getId();
     }

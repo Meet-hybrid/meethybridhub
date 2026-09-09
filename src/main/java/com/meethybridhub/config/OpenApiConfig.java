@@ -8,13 +8,7 @@ import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/**
- * OpenAPI (Swagger) metadata for the API.
- *
- * springdoc generates a live, interactive spec at /swagger-ui.html by scanning
- * controllers + their annotations. Declaring the JWT bearer scheme here means
- * every secured endpoint can be tested from the UI once auth exists (Phase 2).
- */
+
 @Configuration
 public class OpenApiConfig {
 

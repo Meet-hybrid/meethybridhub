@@ -18,10 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-/**
- * Unit tests for {@link StoreService} settings behavior that is hard to hit in
- * integration tests: the concurrent first-GET lazy-create race.
- */
+
 @ExtendWith(MockitoExtension.class)
 class StoreSettingsServiceTest {
 
@@ -59,8 +56,7 @@ class StoreSettingsServiceTest {
 
         StoreSettings winner = new StoreSettings(STORE_ID);
 
-        // First GET misses, the save loses the unique store_id race, and the
-        // re-query finds the row the winner persisted.
+
         when(storeSettingsRepository.findByStoreId(STORE_ID))
                 .thenReturn(Optional.empty(), Optional.of(winner));
         when(storeSettingsRepository.save(any(StoreSettings.class)))
@@ -92,23 +88,18 @@ class StoreSettingsServiceTest {
             assertThat(e.getMessage()).contains("vanished after concurrent creation");
             return;
         }
-        // The winner's row can never vanish (same transaction), so this branch
-        // is defense-in-depth; reaching it without throwing is also acceptable.
+
+
     }
 
-    // ------------------------------------------------------------------
-    // Helpers
-    // ------------------------------------------------------------------
 
-    /** An ADMIN bypasses the ownership check in getCurrentTenantStore, which
-     *  keeps this unit test focused on the settings race, not authz. */
     private User admin() {
         User owner = new User("owner@example.com", "hash", "Owner");
         owner.addRole("ADMIN");
         return owner;
     }
 
-    /** A store whose id is set (DB-generated in production). */
+
     private Store store(User owner) {
         Store store = new Store(owner, "Race Shop", "race-shop", null);
         ReflectionTestUtils.setField(store, "id", STORE_ID);

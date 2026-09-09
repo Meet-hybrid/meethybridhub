@@ -8,27 +8,17 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.math.BigDecimal;
 import java.time.Instant;
 
-/**
- * A flat platform fee charged on one transaction (see V8__platform_charges.sql
- * and docs/platform-charge-dormant-module.md).
- *
- * Dormant module: rows are only ever written when the module is activated
- * ({@code PLATFORM_CHARGE_ENABLED=true}), so this table is empty in production
- * until the Orders/Payments phase lands.
- *
- * The {@code transaction_ref} column is unique — that is the idempotency key:
- * a transaction can never be charged twice.
- */
+
 @Entity
 @Table(name = "platform_charges")
 @EntityListeners(AuditingEntityListener.class)
 public class PlatformCharge {
 
-    /** Lifecycle of a recorded platform charge. */
+
     public enum Status {
-        PENDING,    // recorded, not yet collected from the payout
-        COLLECTED,  // fee collected
-        FAILED      // collection failed (retryable)
+        PENDING,
+        COLLECTED,
+        FAILED
     }
 
     @Id

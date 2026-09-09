@@ -16,18 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Instant;
 import java.util.List;
 
-/**
- * Store endpoints.
- *
- *   POST   /api/v1/stores            - create a store (any authenticated user;
- *                                      the creator becomes STORE_OWNER)
- *   GET    /api/v1/stores/me         - the store for the current tenant context
- *   GET    /api/v1/stores/me/domains - domains of the current tenant store
- *   POST   /api/v1/stores/me/domains - register a domain for the current tenant store
- *
- * Store management requires STORE_OWNER or ADMIN. The current tenant is set by
- * the {@code X-Store-Id} header or the store subdomain (see {@link StoreFilter}).
- */
+
 @RestController
 @RequestMapping("/api/v1/stores")
 public class StoreController {
@@ -96,7 +85,6 @@ public class StoreController {
         return ResponseEntity.ok(StoreSettingsResponse.from(storeService.updateSettingsForCurrentTenant(user, request)));
     }
 
-    // Request/Response records
 
     public record CreateStoreRequest(
             @NotBlank(message = "Store name is required")

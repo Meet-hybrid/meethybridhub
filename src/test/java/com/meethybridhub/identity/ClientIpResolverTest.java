@@ -6,10 +6,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Unit tests for {@link ClientIpResolver}: the X-Forwarded-For header is
- * ignored unless explicitly trusted, and the last hop is used when it is.
- */
+
 class ClientIpResolverTest {
 
     private final ClientIpResolver resolver = new ClientIpResolver();
