@@ -32,7 +32,7 @@ export default function OrdersPage() {
         }))
       );
     } catch {
-      // Fallback to mock data
+
       setOrders([
         { id: 1001, customer: "Alice Johnson", items: 3, totalAmount: 125000, status: "PENDING", createdAt: "2026-09-01T10:30:00Z", shipping: "Delivery" },
         { id: 1002, customer: "Bob Smith", items: 1, totalAmount: 45000, status: "CONFIRMED", createdAt: "2026-09-01T09:15:00Z", shipping: "Pickup" },

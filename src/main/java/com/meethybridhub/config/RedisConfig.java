@@ -29,21 +29,21 @@ public class RedisConfig {
 
         Map<String, RedisCacheConfiguration> cacheConfigs = new HashMap<>();
 
-        // Catalog data changes infrequently — long TTL
+
         cacheConfigs.put("stores", defaultConfig.entryTtl(Duration.ofHours(1)));
         cacheConfigs.put("products", defaultConfig.entryTtl(Duration.ofMinutes(15)));
         cacheConfigs.put("categories", defaultConfig.entryTtl(Duration.ofHours(1)));
 
-        // User data — medium TTL
+
         cacheConfigs.put("users", defaultConfig.entryTtl(Duration.ofMinutes(10)));
 
-        // Config data — long TTL
+
         cacheConfigs.put("platformConfig", defaultConfig.entryTtl(Duration.ofHours(2)));
 
-        // Featured content — medium TTL
+
         cacheConfigs.put("featured", defaultConfig.entryTtl(Duration.ofMinutes(30)));
 
-        // Commission rules — long TTL
+
         cacheConfigs.put("commissionRules", defaultConfig.entryTtl(Duration.ofHours(1)));
 
         return RedisCacheManager.builder(connectionFactory)

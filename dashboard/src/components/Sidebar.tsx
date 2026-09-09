@@ -38,7 +38,7 @@ export default function Sidebar() {
     >
       <div className="flex items-center gap-2 px-4 h-16 border-b border-gray-800">
         <Store className="w-6 h-6 text-indigo-400 shrink-0" />
-        {!collapsed && <span className="font-bold text-lg truncate">MeethybridHub</span>}
+        {!collapsed && <span className="font-bold text-lg truncate">DivinezSignature</span>}
       </div>
 
       <nav className="flex-1 py-4 space-y-1 px-2">

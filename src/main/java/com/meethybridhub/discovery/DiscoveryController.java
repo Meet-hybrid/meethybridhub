@@ -30,7 +30,6 @@ public class DiscoveryController {
         this.userService = userService;
     }
 
-    // ─── Store Reviews ──────────────────────────────────────────────
 
     @PostMapping("/stores/{storeId}/reviews")
     @PreAuthorize("isAuthenticated()")
@@ -57,7 +56,6 @@ public class DiscoveryController {
         return ResponseEntity.ok(service.getStoreReviewSummary(storeId));
     }
 
-    // ─── Product Reviews ────────────────────────────────────────────
 
     @PostMapping("/products/{productId}/reviews")
     @PreAuthorize("isAuthenticated()")
@@ -79,7 +77,6 @@ public class DiscoveryController {
                         .map(ProductReviewResponse::from).toList());
     }
 
-    // ─── Favorites ──────────────────────────────────────────────────
 
     @PostMapping("/favorites")
     @PreAuthorize("isAuthenticated()")
@@ -115,7 +112,6 @@ public class DiscoveryController {
         return ResponseEntity.ok(service.listFavorites(user, entityType));
     }
 
-    // ─── Featured Content ───────────────────────────────────────────
 
     @GetMapping("/featured/stores")
     public ResponseEntity<List<FeaturedContent>> featuredStores() {
@@ -137,7 +133,6 @@ public class DiscoveryController {
         return ResponseEntity.ok(service.getAllFeatured());
     }
 
-    // ─── Search ─────────────────────────────────────────────────────
 
     @GetMapping("/search/stores")
     public ResponseEntity<List<Store>> searchStores(
@@ -147,7 +142,6 @@ public class DiscoveryController {
         return ResponseEntity.ok(service.searchStores(q, page, size));
     }
 
-    // ─── DTOs ───────────────────────────────────────────────────────
 
     public record CreateReviewRequest(
             @NotNull @Min(1) @Max(5) short rating,

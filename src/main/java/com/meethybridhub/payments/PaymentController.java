@@ -60,7 +60,7 @@ public class PaymentController {
         return ResponseEntity.ok(PaymentResponse.from(paymentService.get(TenantContext.requireStoreId(), paymentId, user)));
     }
 
-    /** Korapay webhook receiver. Authentication is replaced by HMAC verification. */
+
     @PostMapping("/payments/webhook")
     public ResponseEntity<Void> webhook(
             @RequestHeader(value = "X-Korapay-Signature", required = false) String signature,

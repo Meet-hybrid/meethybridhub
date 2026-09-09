@@ -17,13 +17,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Integration tests for role-based access control (Hybrid's Card 3):
- *   - ADMIN can list/manage users (roles, status, soft delete)
- *   - Role strings are validated and normalized
- *   - Non-admins are denied admin endpoints (403)
- *   - Authenticated-only endpoints reject anonymous callers
- */
+
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -52,19 +46,19 @@ class AdminUserManagementIntegrationTest {
 
         Long customerId = userRepository.findByEmail(customerEmail).orElseThrow().getId();
 
-        // List users
+
         mockMvc.perform(get("/api/v1/admin/users")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.email == 'customer@example.com')]").exists());
 
-        // Filter by role
+
         mockMvc.perform(get("/api/v1/admin/users").param("role", "ADMIN")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.email == 'root@example.com')]").exists());
 
-        // Update roles: messy input is normalized
+
         mockMvc.perform(put("/api/v1/admin/users/{id}/roles", customerId)
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -72,14 +66,14 @@ class AdminUserManagementIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.roles").value("CUSTOMER,STORE_OWNER"));
 
-        // Invalid role rejected
+
         mockMvc.perform(put("/api/v1/admin/users/{id}/roles", customerId)
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"roles\": \"SUPERHERO\"}"))
                 .andExpect(status().isBadRequest());
 
-        // Update status
+
         mockMvc.perform(put("/api/v1/admin/users/{id}/status", customerId)
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -87,13 +81,13 @@ class AdminUserManagementIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("SUSPENDED"));
 
-        // Get user detail
+
         mockMvc.perform(get("/api/v1/admin/users/{id}", customerId)
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value(customerEmail));
 
-        // Soft delete
+
         mockMvc.perform(delete("/api/v1/admin/users/{id}", customerId)
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk());
@@ -117,14 +111,7 @@ class AdminUserManagementIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
-    // ------------------------------------------------------------------
-    // Helpers
-    // ------------------------------------------------------------------
 
-    /**
-     * Register a user and verify their email, so the returned access token is
-     * actually usable (the JWT filter rejects unverified accounts).
-     */
     private String registerAndGetToken(String email, String fullName) throws Exception {
         String body = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -142,8 +129,7 @@ class AdminUserManagementIntegrationTest {
     private String registerAndPromoteToAdmin(String email, String fullName) throws Exception {
         String token = registerAndGetToken(email, fullName);
 
-        // Promote to ADMIN in the database; the JWT filter re-loads authorities
-        // from the DB on every request, so the next call already has ADMIN.
+
         User user = userRepository.findByEmail(email).orElseThrow();
         user.addRole("ADMIN");
         userRepository.save(user);

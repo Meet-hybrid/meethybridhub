@@ -20,11 +20,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Integration tests for the security audit trail: security-relevant events
- * (registration, verification, login success/failure, admin role & status
- * changes) land in {@code audit_log} with the actor, description and IP.
- */
+
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -118,7 +114,7 @@ class AuditLogIntegrationTest {
 
         Long adminId = userRepository.findByEmail("audit-admin@example.com").orElseThrow().getId();
         assertThat(findByEvent(AuditEventType.ROLES_UPDATED).getUserId()).isEqualTo(adminId);
-        // Admin actions carry the acting admin's IP
+
         assertThat(findByEvent(AuditEventType.ROLES_UPDATED).getIpAddress()).isEqualTo("127.0.0.1");
         assertThat(findByEvent(AuditEventType.USER_STATUS_UPDATED).getUserId()).isEqualTo(adminId);
     }
@@ -177,11 +173,7 @@ class AuditLogIntegrationTest {
         assertThat(findByEvent(AuditEventType.PASSWORD_RESET_CONFIRMED).getUserId()).isEqualTo(userId);
     }
 
-    // ------------------------------------------------------------------
-    // Helpers
-    // ------------------------------------------------------------------
 
-    /** The latest audit row for the given event type (rows are ordered by id). */
     private AuditLog findByEvent(AuditEventType eventType) {
         List<AuditLog> rows = auditLogRepository.findAll().stream()
                 .filter(r -> r.getEventType() == eventType)
@@ -213,8 +205,7 @@ class AuditLogIntegrationTest {
         String token = register(email, fullName);
         verifyEmail(email);
 
-        // Promote to ADMIN in the database; the JWT filter re-loads authorities
-        // from the DB on every request, so the next call already has ADMIN.
+
         User user = userRepository.findByEmail(email).orElseThrow();
         user.addRole("ADMIN");
         userRepository.save(user);

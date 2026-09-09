@@ -16,11 +16,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/**
- * Unit tests for {@link TokenRevocationService} (no Spring context):
- * hashing, idempotent revocation, unparseable-token handling, and the
- * concurrent-revoke guard.
- */
+
 @ExtendWith(MockitoExtension.class)
 class TokenRevocationServiceTest {
 
@@ -45,7 +41,7 @@ class TokenRevocationServiceTest {
         verify(revokedTokenRepository).save(captor.capture());
 
         RevokedToken saved = captor.getValue();
-        assertThat(saved.getTokenHash()).isEqualTo(sha256(TOKEN)); // hash, never the raw token
+        assertThat(saved.getTokenHash()).isEqualTo(sha256(TOKEN));
         assertThat(saved.getTokenHash()).doesNotContain(TOKEN);
         assertThat(saved.getUserId()).isEqualTo(42L);
         assertThat(saved.getExpiresAt()).isEqualTo(expiresAt);
@@ -89,7 +85,7 @@ class TokenRevocationServiceTest {
                 .thenThrow(new DataIntegrityViolationException("unique constraint"));
 
         TokenRevocationService service = new TokenRevocationService(revokedTokenRepository, jwtService);
-        service.revoke(TOKEN, 42L); // must not throw
+        service.revoke(TOKEN, 42L);
 
         verify(revokedTokenRepository).save(any(RevokedToken.class));
     }
@@ -111,7 +107,7 @@ class TokenRevocationServiceTest {
         assertThat(service.isRevoked("")).isFalse();
     }
 
-    /** Mirror of the service's SHA-256 hex helper (test-side oracle). */
+
     private String sha256(String token) {
         try {
             java.security.MessageDigest digest =

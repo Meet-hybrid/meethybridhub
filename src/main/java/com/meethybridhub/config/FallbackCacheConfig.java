@@ -6,10 +6,7 @@ import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/**
- * In-memory cache manager used when Redis is not available (tests, local dev).
- * When Redis IS available, {@link RedisConfig} takes precedence.
- */
+
 @Configuration
 @ConditionalOnMissingBean(name = "cacheManager")
 public class FallbackCacheConfig {

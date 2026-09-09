@@ -6,13 +6,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 
-/**
- * One-time token used to prove ownership of an email address.
- *
- * Maps to the {@code email_verification_tokens} table created in
- * V2__identity.sql. Tokens expire 24 hours after creation; {@code usedAt}
- * records when the token was consumed so it cannot be replayed.
- */
+
 @Entity
 @Table(name = "email_verification_tokens")
 @EntityListeners(AuditingEntityListener.class)

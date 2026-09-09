@@ -11,20 +11,13 @@ import org.springframework.stereotype.Service;
 
 import java.util.Properties;
 
-/**
- * Default {@link EmailService}.
- *
- * If SMTP credentials are configured (the {@code mail.*} properties in
- * application.yml, i.e. the MAIL_* environment variables), emails are actually
- * sent. Otherwise they are logged to the console — perfect for local
- * development and tests, where no mail server exists.
- */
+
 @Service
 public class DefaultEmailService implements EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(DefaultEmailService.class);
 
-    private final JavaMailSenderImpl mailSender; // null when SMTP is not configured
+    private final JavaMailSenderImpl mailSender;
     private final String from;
     private final String baseUrl;
 
@@ -69,9 +62,8 @@ public class DefaultEmailService implements EmailService {
 
     @Override
     public void sendPasswordResetEmail(String to, String fullName, String token) {
-        // The link is the contract a frontend reset page consumes: it should
-        // read ?token= and POST it (with the new password) to
-        // /api/v1/auth/reset-password/confirm. The endpoint itself is POST-only.
+
+
         String link = baseUrl + "/api/v1/auth/reset-password/confirm?token=" + token;
         send(to, "Reset your MeethybridHub password",
                 "Hi " + fullName + ",\n\n"
@@ -97,7 +89,7 @@ public class DefaultEmailService implements EmailService {
                 throw new IllegalStateException("Failed to send email", e);
             }
         } else {
-            // Dev/test mode: surface the email in the logs so flows can be exercised.
+
             log.info("=== EMAIL (dev mode) ===\nTo: {}\nSubject: {}\nBody:\n{}", to, subject, body);
         }
     }

@@ -28,7 +28,6 @@ public class AdminAnalyticsController {
         this.userService = userService;
     }
 
-    // ─── Platform Config ────────────────────────────────────────────
 
     @GetMapping("/config")
     public ResponseEntity<Map<String, String>> getAllConfig() {
@@ -51,7 +50,6 @@ public class AdminAnalyticsController {
         return ResponseEntity.ok(config);
     }
 
-    // ─── Commission Rules ───────────────────────────────────────────
 
     @PostMapping("/commissions/rules")
     public ResponseEntity<CommissionRule> createCommissionRule(
@@ -75,7 +73,6 @@ public class AdminAnalyticsController {
         return ResponseEntity.ok(service.updateCommissionRule(ruleId, body.rate(), body.active()));
     }
 
-    // ─── Commission Entries ─────────────────────────────────────────
 
     @GetMapping("/commissions/entries")
     public ResponseEntity<List<CommissionEntry>> listCommissions(
@@ -89,7 +86,6 @@ public class AdminAnalyticsController {
         return ResponseEntity.ok(service.getCommissionSummary(storeId));
     }
 
-    // ─── Disputes ───────────────────────────────────────────────────
 
     @PostMapping("/disputes")
     public ResponseEntity<Dispute> createDispute(
@@ -138,7 +134,6 @@ public class AdminAnalyticsController {
         return ResponseEntity.ok(service.listDisputeMessages(id));
     }
 
-    // ─── Analytics ──────────────────────────────────────────────────
 
     @GetMapping("/analytics/stores/{storeId}")
     public ResponseEntity<Map<String, Object>> storeAnalytics(
@@ -152,7 +147,6 @@ public class AdminAnalyticsController {
         return ResponseEntity.ok(service.getPlatformAnalytics());
     }
 
-    // ─── DTOs ───────────────────────────────────────────────────────
 
     public record SetConfigRequest(
             @NotBlank String value,

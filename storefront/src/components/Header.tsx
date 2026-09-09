@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { Menu, X, ShoppingBag, Search, User } from "lucide-react";
 import { useStore } from "@/components/StoreProvider";
@@ -13,8 +13,20 @@ export default function Header() {
   const { items } = useCart();
   const { isAuthenticated } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const isDivinez = activeStore.slug === "divinez-signature";
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchOpen(false);
+      setSearchQuery("");
+    }
+  };
 
   return (
     <header className={`sticky top-0 z-50 backdrop-blur-md border-b ${
@@ -34,7 +46,8 @@ export default function Header() {
           <Link href="/" className="flex items-center gap-2">
             {isDivinez ? (
               <div className="leading-tight">
-                <span className="font-serif font-bold text-2xl text-[#0B4A2B] tracking-tight">{activeStore.name}</span>
+                <span className="block text-[9px] text-[#0B4A2B]/60 font-semibold tracking-[0.18em] uppercase">{activeStore.parentBrand}</span>
+                <span className="block font-serif font-bold text-2xl text-[#0B4A2B] tracking-tight">{activeStore.subBrand}</span>
               </div>
             ) : (
               <>
@@ -80,9 +93,13 @@ export default function Header() {
               }`}>{items.length}</span>}
               <ShoppingBag className="w-5 h-5" />
             </Link>
-            <button className={`p-2 transition-colors ${
-              isDivinez ? "text-[#0B4A2B]/70 hover:text-[#0B4A2B]" : "text-[#aa9a8b] hover:text-[#f7f1e8]"
-            }`}>
+            <button
+              onClick={() => setSearchOpen(!searchOpen)}
+              className={`p-2 transition-colors ${
+                isDivinez ? "text-[#0B4A2B]/70 hover:text-[#0B4A2B]" : "text-[#aa9a8b] hover:text-[#f7f1e8]"
+              }`}
+              aria-label="Search"
+            >
               <Search className="w-5 h-5" />
             </button>
             <Link
@@ -105,6 +122,40 @@ export default function Header() {
           </div>
         </div>
       </div>
+
+      {/* Search Bar */}
+      {searchOpen && (
+        <div className={`border-t ${isDivinez ? "border-[#0B4A2B]/10 bg-white" : "border-[#3a2b20] bg-[#17110d]"}`}>
+          <form onSubmit={handleSearch} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div className="relative">
+              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${
+                isDivinez ? "text-[#0B4A2B]/40" : "text-[#aa9a8b]"
+              }`} />
+              <input
+                type="text"
+                autoFocus
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={`Search ${activeStore.name} products...`}
+                className={`w-full pl-10 pr-10 py-2.5 rounded-full text-sm outline-none transition-colors ${
+                  isDivinez
+                    ? "bg-[#FAFAF8] border border-[#0B4A2B]/20 text-[#0B4A2B] placeholder-[#0B4A2B]/40 focus:border-[#0B4A2B]/50"
+                    : "bg-[#100d0b] border border-[#3a2b20] text-[#f7f1e8] placeholder-[#aa9a8b]/50 focus:border-[#9a6842]"
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => { setSearchOpen(false); setSearchQuery(""); }}
+                className={`absolute right-3 top-1/2 -translate-y-1/2 ${
+                  isDivinez ? "text-[#0B4A2B]/40 hover:text-[#0B4A2B]" : "text-[#aa9a8b] hover:text-[#f7f1e8]"
+                }`}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Mobile Nav */}
       {mobileOpen && (

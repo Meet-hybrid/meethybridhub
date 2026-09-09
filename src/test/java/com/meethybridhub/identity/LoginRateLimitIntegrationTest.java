@@ -21,10 +21,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Integration tests for login attempt tracking and rate limiting.
- * Uses the test-profile thresholds (3 failed attempts per email, 5 per IP).
- */
+
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -53,7 +50,7 @@ class LoginRateLimitIntegrationTest {
     void failedAndSuccessfulAttemptsAreRecorded() throws Exception {
         registerAndActivate("tracked@example.com");
 
-        // Failed attempt is recorded
+
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\": \"tracked@example.com\", \"password\": \"" + WRONG_PASSWORD + "\"}"))
@@ -63,7 +60,7 @@ class LoginRateLimitIntegrationTest {
         assertThat(loginAttemptRepository.countByEmailAndPurposeAndSuccessAndCreatedAtAfter(
                 "tracked@example.com", LoginAttempt.Purpose.LOGIN, false, windowStart)).isEqualTo(1);
 
-        // Successful attempt is recorded too
+
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\": \"tracked@example.com\", \"password\": \"" + PASSWORD + "\"}"))
@@ -77,7 +74,7 @@ class LoginRateLimitIntegrationTest {
     void accountIsLockedAfterTooManyFailedAttempts() throws Exception {
         registerAndActivate("locked@example.com");
 
-        // 3 wrong passwords (test threshold), each 401
+
         for (int i = 0; i < 3; i++) {
             mockMvc.perform(post("/api/v1/auth/login")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -85,7 +82,7 @@ class LoginRateLimitIntegrationTest {
                     .andExpect(status().isUnauthorized());
         }
 
-        // The 4th attempt — even with the CORRECT password — is blocked (429)
+
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\": \"locked@example.com\", \"password\": \"" + PASSWORD + "\"}"))
@@ -96,7 +93,7 @@ class LoginRateLimitIntegrationTest {
     void successfulLoginResetsFailedAttemptCounter() throws Exception {
         registerAndActivate("reset@example.com");
 
-        // 2 failures (of the 3 allowed) accumulate...
+
         for (int i = 0; i < 2; i++) {
             mockMvc.perform(post("/api/v1/auth/login")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -104,13 +101,13 @@ class LoginRateLimitIntegrationTest {
                     .andExpect(status().isUnauthorized());
         }
 
-        // ...but a success clears them, so the user isn't locked out by history
+
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\": \"reset@example.com\", \"password\": \"" + PASSWORD + "\"}"))
                 .andExpect(status().isOk());
 
-        // A fresh 3 failures are now needed to lock the account again
+
         for (int i = 0; i < 3; i++) {
             mockMvc.perform(post("/api/v1/auth/login")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -134,7 +131,7 @@ class LoginRateLimitIntegrationTest {
                     .andExpect(status().isUnauthorized());
         }
 
-        // 429 carries Retry-After = window (15 min = 900s), not a hardcoded 60
+
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\": \"retry@example.com\", \"password\": \"" + PASSWORD + "\"}"))
@@ -144,9 +141,8 @@ class LoginRateLimitIntegrationTest {
 
     @Test
     void spoofedForwardedHeaderDoesNotBypassRateLimit() throws Exception {
-        // 5 attempts, each with a DIFFERENT spoofed X-Forwarded-For. With header
-        // trust OFF (default), every request is attributed to the real socket
-        // address, so the per-IP limit still fires on the 6th.
+
+
         for (int i = 0; i < 5; i++) {
             mockMvc.perform(post("/api/v1/auth/login")
                             .header("X-Forwarded-For", "203.0.113." + i)
@@ -164,8 +160,8 @@ class LoginRateLimitIntegrationTest {
 
     @Test
     void forwardedHeaderIsHonoredWhenTrusted() throws Exception {
-        // Opt-in path: flip the trust flag on this context's singleton, run the
-        // scenario, and restore it — so the shared context is left untouched.
+
+
         ReflectionTestUtils.setField(clientIpResolver, "trustForwardedHeader", true);
         try {
             for (int i = 0; i < 5; i++) {
@@ -176,7 +172,7 @@ class LoginRateLimitIntegrationTest {
                         .andExpect(status().isUnauthorized());
             }
 
-            // 6th attempt from the same forwarded IP is blocked
+
             mockMvc.perform(post("/api/v1/auth/login")
                             .header("X-Forwarded-For", "203.0.113.50")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -189,8 +185,8 @@ class LoginRateLimitIntegrationTest {
 
     @Test
     void ipIsRateLimitedAfterExcessiveAttempts() throws Exception {
-        // 5 attempts from the same IP (127.0.0.1) using different emails so the
-        // per-email lockout doesn't trigger first
+
+
         for (int i = 0; i < 5; i++) {
             mockMvc.perform(post("/api/v1/auth/login")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -198,7 +194,7 @@ class LoginRateLimitIntegrationTest {
                     .andExpect(status().isUnauthorized());
         }
 
-        // The 6th attempt from the same IP is blocked (429)
+
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\": \"ip-5@example.com\", \"password\": \"" + WRONG_PASSWORD + "\"}"))

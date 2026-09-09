@@ -44,7 +44,6 @@ public class AdminService {
         this.salesSnapshotRepo = salesSnapshotRepo;
     }
 
-    // ─── Platform Config ────────────────────────────────────────────
 
     public PlatformConfig getConfig(String key) {
         return configRepo.findByConfigKey(key)
@@ -68,7 +67,6 @@ public class AdminService {
         return saved;
     }
 
-    // ─── Commission Rules ───────────────────────────────────────────
 
     public CommissionRule createCommissionRule(Long storeId, CommissionRuleType ruleType,
                                                 BigDecimal rate, String currency,
@@ -91,7 +89,6 @@ public class AdminService {
         return commissionRuleRepo.save(rule);
     }
 
-    // ─── Commission Entries ─────────────────────────────────────────
 
     public CommissionEntry calculateCommission(Long storeId, Long orderId, BigDecimal orderAmount) {
         CommissionRule rule = commissionRuleRepo.findActiveForStore(storeId).stream()
@@ -131,7 +128,6 @@ public class AdminService {
         return summary;
     }
 
-    // ─── Disputes ───────────────────────────────────────────────────
 
     public Dispute createDispute(Long storeId, Long orderId, Long commissionId,
                                   Long filedById, DisputeType type,
@@ -190,7 +186,6 @@ public class AdminService {
         return disputeMessageRepo.findByDisputeIdOrderByCreatedAtAsc(disputeId);
     }
 
-    // ─── Analytics ──────────────────────────────────────────────────
 
     public Map<String, Object> getStoreAnalytics(Long storeId, int days) {
         LocalDate to = LocalDate.now();

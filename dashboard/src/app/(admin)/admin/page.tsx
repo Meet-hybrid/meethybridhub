@@ -70,7 +70,7 @@ export default function AdminOverviewPage() {
           );
         }
       } catch {
-        // Use fallback
+
       } finally {
         setLoading(false);
       }
@@ -134,7 +134,7 @@ export default function AdminOverviewPage() {
         <p className="text-sm text-gray-500 mt-1">Monitor your platform-wide metrics and activity</p>
       </div>
 
-      {/* Stats Grid */}
+      {}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <StatsCard
           title="Total Stores"
@@ -179,7 +179,7 @@ export default function AdminOverviewPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Revenue Chart */}
+        {}
         <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-gray-900">Platform Revenue</h3>
@@ -207,7 +207,7 @@ export default function AdminOverviewPage() {
           </ResponsiveContainer>
         </div>
 
-        {/* Quick Stats */}
+        {}
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <h3 className="text-sm font-semibold text-gray-900 mb-4">Platform Health</h3>
           <div className="space-y-4">
@@ -243,7 +243,7 @@ export default function AdminOverviewPage() {
         </div>
       </div>
 
-      {/* Recent Stores */}
+      {}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold text-gray-900">Recent Stores</h3>

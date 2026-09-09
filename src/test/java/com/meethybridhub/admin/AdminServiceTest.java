@@ -31,7 +31,6 @@ class AdminServiceTest {
 
     @InjectMocks private AdminService service;
 
-    // ─── Platform Config ────────────────────────────────────────────
 
     @Test
     void getConfig_returnsValue() {
@@ -68,7 +67,6 @@ class AdminServiceTest {
         assertEquals("new", result.getConfigValue());
     }
 
-    // ─── Commission Rules ───────────────────────────────────────────
 
     @Test
     void createCommissionRule_savesAndReturns() {
@@ -123,7 +121,6 @@ class AdminServiceTest {
         assertEquals(BigDecimal.ZERO, commission);
     }
 
-    // ─── Commission Entries ─────────────────────────────────────────
 
     @Test
     void calculateCommission_withRule() {
@@ -153,7 +150,6 @@ class AdminServiceTest {
         assertNull(entry.getRuleId());
     }
 
-    // ─── Disputes ───────────────────────────────────────────────────
 
     @Test
     void createDispute_savesAndReturns() {
@@ -223,7 +219,6 @@ class AdminServiceTest {
                 () -> service.listDisputes(1L, "BOGUS"));
     }
 
-    // ─── getAllConfig ─────────────────────────────────────────────
 
     @Test
     void getAllConfig_returnsMap() {
@@ -236,7 +231,6 @@ class AdminServiceTest {
         assertEquals("v1", result.get("k1"));
     }
 
-    // ─── Commission Rules ───────────────────────────────────────
 
     @Test
     void listCommissionRules_delegatesToRepo() {
@@ -264,7 +258,6 @@ class AdminServiceTest {
                 () -> service.updateCommissionRule(999L, null, true));
     }
 
-    // ─── Commission Entries ─────────────────────────────────────
 
     @Test
     void listCommissions_delegatesToRepo() {
@@ -286,7 +279,6 @@ class AdminServiceTest {
         assertEquals(5L, summary.get("totalEntries"));
     }
 
-    // ─── Disputes ───────────────────────────────────────────────
 
     @Test
     void listDisputes_withValidStatus() {
@@ -306,7 +298,6 @@ class AdminServiceTest {
         assertEquals(0, service.listDisputeMessages(1L).size());
     }
 
-    // ─── Analytics ──────────────────────────────────────────────
 
     @Test
     void getStoreAnalytics_computesMetrics() {

@@ -19,12 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-/**
- * Pure unit tests for {@link StoreFilter} — no Spring context.
- *
- * TenantContext is cleared in the filter's finally block, so we capture it
- * inside the filterChain callback rather than checking after doFilterInternal.
- */
+
 @ExtendWith(MockitoExtension.class)
 @org.mockito.junit.jupiter.MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
 class StoreFilterTest {
@@ -50,7 +45,7 @@ class StoreFilterTest {
         TenantContext.clear();
     }
 
-    /** Capture TenantContext inside the filterChain callback, before the finally block clears it. */
+
     private Long[] captureTenantContext() throws ServletException, IOException {
         Long[] captured = new Long[1];
         doAnswer(inv -> {
@@ -60,7 +55,6 @@ class StoreFilterTest {
         return captured;
     }
 
-    // ── shouldNotFilter ──────────────────────────────────────────
 
     @Test
     void shouldNotFilterLogin() {
@@ -122,7 +116,6 @@ class StoreFilterTest {
         assertThat(filter.shouldNotFilter(request)).isFalse();
     }
 
-    // ── Resolution: X-Store-Id header ────────────────────────────
 
     @Test
     void resolvesFromStoreIdHeader() throws ServletException, IOException {
@@ -142,11 +135,11 @@ class StoreFilterTest {
         when(request.getServletPath()).thenReturn("/api/v1/products");
         when(request.getHeader("X-Store-Id")).thenReturn("999");
         when(storeRepository.existsById(999L)).thenReturn(false);
-        // Falls through — slug returns empty
+
         when(request.getHeader("X-Store-Slug")).thenReturn(null);
-        // Subdomain returns empty
+
         when(request.getHeader("Host")).thenReturn("localhost");
-        // JWT returns empty
+
         when(request.getHeader("Authorization")).thenReturn(null);
         Long[] captured = captureTenantContext();
 
@@ -183,7 +176,6 @@ class StoreFilterTest {
         assertThat(captured[0]).isNull();
     }
 
-    // ── Resolution: X-Store-Slug header ──────────────────────────
 
     @Test
     void resolvesFromSlugHeader() throws ServletException, IOException {
@@ -218,7 +210,6 @@ class StoreFilterTest {
         assertThat(captured[0]).isNull();
     }
 
-    // ── Resolution: subdomain ────────────────────────────────────
 
     @Test
     void resolvesFromSubdomain() throws ServletException, IOException {
@@ -308,7 +299,6 @@ class StoreFilterTest {
         assertThat(captured[0]).isEqualTo(30L);
     }
 
-    // ── Resolution: JWT storeId claim ────────────────────────────
 
     @Test
     void resolvesFromJwtStoreIdClaim() throws ServletException, IOException {
@@ -384,7 +374,6 @@ class StoreFilterTest {
         assertThat(captured[0]).isNull();
     }
 
-    // ── Context cleanup ──────────────────────────────────────────
 
     @Test
     void tenantContextIsClearedAfterFilter() throws ServletException, IOException {
@@ -394,11 +383,10 @@ class StoreFilterTest {
 
         filter.doFilterInternal(request, response, filterChain);
 
-        // TenantContext is cleared in the finally block
+
         assertThat(TenantContext.getStoreId()).isEmpty();
     }
 
-    // ── Resolution order: header wins over subdomain ─────────────
 
     @Test
     void storeIdHeaderWinsOverSubdomain() throws ServletException, IOException {
@@ -406,10 +394,10 @@ class StoreFilterTest {
         when(request.getHeader("X-Store-Id")).thenReturn("42");
         when(storeRepository.existsById(42L)).thenReturn(true);
         when(request.getHeader("X-Store-Slug")).thenReturn(null);
-        // Subdomain would resolve differently but header wins
+
         when(request.getHeader("Host")).thenReturn("other-store.meethybridhub.com");
         when(request.getHeader("Authorization")).thenReturn(null);
-        // Subdomain lookup would find other-store, not 42
+
         Store otherStore = mock(Store.class);
         when(otherStore.getId()).thenReturn(99L);
         when(storeRepository.findBySlug("other-store")).thenReturn(Optional.of(otherStore));

@@ -31,11 +31,11 @@ export default function HomePage() {
           setCategories(list);
         }
       } catch {
-        // Use static fallback data
+
       }
     }
     load();
-  }, []);
+  }, [activeStore.slug]);
 
   const formatPrice = (price: number) =>
     new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN" }).format(price);
@@ -69,11 +69,11 @@ export default function HomePage() {
   if (isDivinez) {
     return (
       <div className="min-h-screen">
-        {/* Hero Section - DivinezSignature */}
+        {}
         <section className="bg-[#FAFAF8] text-[#0B4A2B]">
           <div className="max-w-6xl mx-auto px-6 py-20 text-center">
             <span className="text-[#0B4A2B]/70 uppercase tracking-widest text-xs font-semibold">
-              {activeStore.heroLabel}
+              {activeStore.subBrand} · {activeStore.subBrandDescriptor}
             </span>
             <h1 className="text-5xl font-serif font-extrabold text-[#0B4A2B] mt-3 mb-6 leading-tight">
               {activeStore.heroTitle}
@@ -100,7 +100,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Features Strip - DivinezSignature */}
+        {}
         <section className="bg-[#0B4A2B] text-[#FAFAF8]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -126,7 +126,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Categories - DivinezSignature */}
+        {}
         <section className="py-16 bg-[#FAFAF8]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-10">
@@ -134,9 +134,9 @@ export default function HomePage() {
               <h2 className="text-3xl font-serif font-bold text-[#0B4A2B] mt-2">Shop by Category</h2>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              {displayCategories.map((cat: any) => (
+              {displayCategories.map((cat: any, index: number) => (
                 <Link
-                  key={cat.id}
+                  key={`${cat.id ?? cat.slug ?? cat.name ?? "category"}-${index}`}
                   href={`/products?category=${cat.name?.toLowerCase() ?? ""}`}
                   className="group relative bg-white rounded-2xl p-5 text-center hover:shadow-md transition-all border border-[#0B4A2B]/10"
                 >
@@ -296,9 +296,9 @@ export default function HomePage() {
             </div>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {displayCategories.map((cat: any) => (
+            {displayCategories.map((cat: any, index: number) => (
               <Link
-                key={cat.id}
+                key={`${cat.id ?? cat.slug ?? cat.name ?? "category"}-${index}`}
                 href={`/products?category=${cat.name?.toLowerCase() ?? ""}`}
                 className="group relative bg-[#1b1511] rounded-2xl p-5 text-center hover:bg-[#241c17] transition-colors border border-[#3a2b20]"
               >

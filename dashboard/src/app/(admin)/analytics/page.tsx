@@ -58,7 +58,7 @@ export default function AdminAnalyticsPage() {
           if (res.categoryBreakdown?.length > 0) setPieData(res.categoryBreakdown);
         }
       } catch {
-        // Use fallback
+
       } finally {
         setLoading(false);
       }
@@ -90,7 +90,7 @@ export default function AdminAnalyticsPage() {
         <p className="text-sm text-gray-500 mt-1">Detailed metrics and performance insights</p>
       </div>
 
-      {/* Key Metrics */}
+      {}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard
           title="Monthly Revenue"
@@ -126,9 +126,9 @@ export default function AdminAnalyticsPage() {
         />
       </div>
 
-      {/* Charts Row */}
+      {}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Revenue Trend */}
+        {}
         <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-6">
           <h3 className="text-sm font-semibold text-gray-900 mb-4">Revenue & Orders Trend</h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -150,7 +150,7 @@ export default function AdminAnalyticsPage() {
           </ResponsiveContainer>
         </div>
 
-        {/* Category Breakdown */}
+        {}
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <h3 className="text-sm font-semibold text-gray-900 mb-4">Sales by Category</h3>
           <ResponsiveContainer width="100%" height={200}>

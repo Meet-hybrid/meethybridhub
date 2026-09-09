@@ -8,10 +8,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
-/**
- * Asynchronous listeners for domain events. Each method runs on a separate
- * thread so the event publisher is never blocked.
- */
+
 @Component
 public class EventListeners {
 

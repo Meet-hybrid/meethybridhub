@@ -20,13 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
-/**
- * Pure unit tests for {@link JwtAuthenticationFilter} — no Spring context.
- *
- * Covers: public endpoint bypass, missing/malformed auth headers, valid token
- * paths, rejected tokens (invalid, expired, wrong user, disabled, locked),
- * exception handling, and the shouldNotFilter overrides.
- */
+
 class JwtAuthenticationFilterTest {
 
     private JwtService jwtService;
@@ -50,7 +44,6 @@ class JwtAuthenticationFilterTest {
         SecurityContextHolder.clearContext();
     }
 
-    // ── shouldNotFilter overrides ────────────────────────────────
 
     @Test
     void shouldNotFilterErrorDispatchReturnsTrue() {
@@ -62,7 +55,6 @@ class JwtAuthenticationFilterTest {
         assertThat(filter.shouldNotFilterAsyncDispatch()).isTrue();
     }
 
-    // ── Public endpoint bypass ───────────────────────────────────
 
     @Test
     void skipsFilterForPublicLoginEndpoint() throws ServletException, IOException {
@@ -152,7 +144,6 @@ class JwtAuthenticationFilterTest {
         verifyNoInteractions(jwtService);
     }
 
-    // ── Missing / malformed Authorization header ──────────────────
 
     @Test
     void passesThroughWhenNoAuthorizationHeader() throws ServletException, IOException {
@@ -183,13 +174,12 @@ class JwtAuthenticationFilterTest {
 
         filter.doFilterInternal(request, response, filterChain);
 
-        // "Bearer " → substring(7) = "" → extractUsername returns null → no auth set
+
         when(jwtService.extractUsername("")).thenReturn(null);
 
         verify(filterChain).doFilter(request, response);
     }
 
-    // ── Valid token → authentication set ──────────────────────────
 
     @Test
     void setsAuthenticationWhenTokenIsValid() throws ServletException, IOException {
@@ -209,14 +199,13 @@ class JwtAuthenticationFilterTest {
         assertThat(SecurityContextHolder.getContext().getAuthentication().getPrincipal()).isEqualTo(user);
     }
 
-    // ── Token rejected: already authenticated ─────────────────────
 
     @Test
     void doesNotOverwriteExistingAuthentication() throws ServletException, IOException {
         when(request.getServletPath()).thenReturn("/api/v1/stores");
         when(request.getHeader("Authorization")).thenReturn("Bearer valid-token");
 
-        // Pre-set an existing authentication
+
         UsernamePasswordAuthenticationToken existing =
                 new UsernamePasswordAuthenticationToken("existing", null, List.of());
         SecurityContextHolder.getContext().setAuthentication(existing);
@@ -225,18 +214,17 @@ class JwtAuthenticationFilterTest {
 
         filter.doFilterInternal(request, response, filterChain);
 
-        // Should NOT overwrite the existing authentication
+
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isEqualTo(existing);
     }
 
-    // ── Token rejected: disabled user ─────────────────────────────
 
     @Test
     void doesNotSetAuthenticationWhenUserIsDisabled() throws ServletException, IOException {
         when(request.getServletPath()).thenReturn("/api/v1/stores");
         when(request.getHeader("Authorization")).thenReturn("Bearer valid-token");
 
-        // Disabled user (enabled = false)
+
         UserDetails disabledUser = new org.springframework.security.core.userdetails.User(
                 "alice@example.com", "hash", false, true, true, true,
                 List.of(new SimpleGrantedAuthority("ROLE_CUSTOMER")));
@@ -250,14 +238,13 @@ class JwtAuthenticationFilterTest {
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 
-    // ── Token rejected: locked user ───────────────────────────────
 
     @Test
     void doesNotSetAuthenticationWhenUserIsLocked() throws ServletException, IOException {
         when(request.getServletPath()).thenReturn("/api/v1/stores");
         when(request.getHeader("Authorization")).thenReturn("Bearer valid-token");
 
-        // Locked user (accountNonLocked = false)
+
         UserDetails lockedUser = new org.springframework.security.core.userdetails.User(
                 "alice@example.com", "hash", true, true, true, false,
                 List.of(new SimpleGrantedAuthority("ROLE_CUSTOMER")));
@@ -271,7 +258,6 @@ class JwtAuthenticationFilterTest {
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 
-    // ── Token rejected: invalid token ─────────────────────────────
 
     @Test
     void doesNotSetAuthenticationWhenTokenIsInvalid() throws ServletException, IOException {
@@ -289,7 +275,6 @@ class JwtAuthenticationFilterTest {
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 
-    // ── Token rejected: stale password version ────────────────────
 
     @Test
     void doesNotSetAuthenticationWhenPasswordVersionMismatch() throws ServletException, IOException {
@@ -308,7 +293,6 @@ class JwtAuthenticationFilterTest {
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 
-    // ── Exception handling ────────────────────────────────────────
 
     @Test
     void clearsContextOnExceptionAndContinues() throws ServletException, IOException {
@@ -316,17 +300,16 @@ class JwtAuthenticationFilterTest {
         when(request.getHeader("Authorization")).thenReturn("Bearer bad-token");
         when(jwtService.extractUsername("bad-token")).thenThrow(new RuntimeException("JWT parse error"));
 
-        // Pre-set some authentication to verify it gets cleared
+
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken("old", null, List.of()));
 
         filter.doFilterInternal(request, response, filterChain);
 
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
-        verify(filterChain).doFilter(request, response); // request still continues
+        verify(filterChain).doFilter(request, response);
     }
 
-    // ── extractUsername returns null ──────────────────────────────
 
     @Test
     void doesNotSetAuthenticationWhenExtractUsernameReturnsNull() throws ServletException, IOException {

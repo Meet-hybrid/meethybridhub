@@ -58,10 +58,10 @@ export default function OverviewPage() {
           }
         }
       } catch {
-        // Use fallback data
+
       }
 
-      // If stats weren't loaded from API, use fallback
+
       if (!stats) {
         setStats({
           totalOrders: 342,
@@ -72,7 +72,7 @@ export default function OverviewPage() {
         });
       }
 
-      // If orders weren't loaded from API, use fallback
+
       if (orders.length === 0) {
         setOrders([
           { id: 1001, customer: "Alice Johnson", status: "PENDING", totalAmount: 12500, createdAt: "2026-09-01T10:30:00Z" },

@@ -18,13 +18,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-/**
- * Pure unit tests for {@link UserService} — no Spring context.
- *
- * Covers the gaps identified in coverage-gaps.md: register, updateProfile,
- * listUsers, resendVerificationEmail, requestPasswordReset,
- * confirmPasswordReset, changePassword, and normalizeRoles.
- */
+
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
 
@@ -46,7 +40,6 @@ class UserServiceTest {
                 emailService, auditLogService);
     }
 
-    // ── register ─────────────────────────────────────────────────
 
     @Test
     void registerCreatesUserWithVerificationToken() {
@@ -88,12 +81,11 @@ class UserServiceTest {
 
         User result = userService.register(request);
 
-        // Registration succeeds even though email failed
+
         assertThat(result).isNotNull();
         verify(emailVerificationTokenRepository).save(any(EmailVerificationToken.class));
     }
 
-    // ── updateProfile ────────────────────────────────────────────
 
     @Test
     void updateProfileChangesFullName() {
@@ -129,7 +121,6 @@ class UserServiceTest {
                 .hasMessageContaining("not found");
     }
 
-    // ── listUsers ────────────────────────────────────────────────
 
     @Test
     void listUsersReturnsAllWhenNoFilters() {
@@ -171,13 +162,12 @@ class UserServiceTest {
                 .hasMessageContaining("Unknown status");
     }
 
-    // ── resendVerificationEmail ──────────────────────────────────
 
     @Test
     void resendVerificationEmailSilentlyIgnoresUnknownEmail() {
         when(userRepository.findByEmail("unknown@example.com")).thenReturn(Optional.empty());
 
-        // Should not throw
+
         userService.resendVerificationEmail("unknown@example.com");
 
         verify(emailVerificationTokenRepository, never()).deleteByUserIdAndUsedAtIsNull(anyLong());
@@ -207,7 +197,6 @@ class UserServiceTest {
         verify(emailVerificationTokenRepository).save(any(EmailVerificationToken.class));
     }
 
-    // ── requestPasswordReset ─────────────────────────────────────
 
     @Test
     void requestPasswordResetSilentlyIgnoresUnknownEmail() {
@@ -230,7 +219,6 @@ class UserServiceTest {
         verify(passwordResetTokenRepository).save(any(PasswordResetToken.class));
     }
 
-    // ── confirmPasswordReset ─────────────────────────────────────
 
     @Test
     void confirmPasswordResetUpdatesPasswordAndConsumesToken() {
@@ -301,13 +289,12 @@ class UserServiceTest {
         when(token.isExpired()).thenReturn(false);
         when(passwordResetTokenRepository.findByToken("valid-token")).thenReturn(Optional.of(token));
 
-        // validatePassword is called BEFORE finding the user, so weak password throws first
+
         assertThatThrownBy(() -> userService.confirmPasswordReset("valid-token", "weak"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("at least 8 characters");
     }
 
-    // ── changePassword ───────────────────────────────────────────
 
     @Test
     void changePasswordUpdatesHashAndBumpsVersion() {
@@ -335,7 +322,6 @@ class UserServiceTest {
                 .hasMessageContaining("incorrect");
     }
 
-    // ── validatePassword (private, tested through register) ──────
 
     @Test
     void registerRejectsShortPassword() {
@@ -387,7 +373,6 @@ class UserServiceTest {
                 .hasMessageContaining("uppercase and lowercase");
     }
 
-    // ── normalizeRoles (tested through updateRoles) ──────────────
 
     @Test
     void updateRolesNormalizesAndDeduplicates() {

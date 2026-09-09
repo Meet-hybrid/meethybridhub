@@ -1,4 +1,5 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+const STORE_SLUG = process.env.NEXT_PUBLIC_STORE_SLUG || "divinez-signature";
 
 class ApiClient {
   private token: string | null = null;
@@ -24,6 +25,7 @@ class ApiClient {
     const token = this.getToken();
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
+      "X-Store-Slug": STORE_SLUG,
       ...((options.headers as Record<string, string>) || {}),
     };
     if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -37,7 +39,6 @@ class ApiClient {
     return res.json();
   }
 
-  // Auth
   login(email: string, password: string) {
     return this.request<{ accessToken: string; refreshToken: string; user: any }>("/api/v1/auth/login", {
       method: "POST",
@@ -56,7 +57,6 @@ class ApiClient {
     return this.request<any>("/api/v1/users/me");
   }
 
-  // Store
   getMyStore() {
     return this.request<any>("/api/v1/stores/me");
   }
@@ -72,7 +72,6 @@ class ApiClient {
     });
   }
 
-  // Products
   getProducts(params?: { page?: number; size?: number; status?: string }) {
     const qs = new URLSearchParams();
     if (params?.page) qs.set("page", String(params.page));
@@ -97,7 +96,6 @@ class ApiClient {
     return this.request<void>(`/api/v1/products/${id}`, { method: "DELETE" });
   }
 
-  // Categories
   getCategories() {
     return this.request<any[]>("/api/v1/categories");
   }
@@ -106,7 +104,6 @@ class ApiClient {
     return this.request<any>("/api/v1/categories", { method: "POST", body: JSON.stringify(data) });
   }
 
-  // Orders
   getOrders(params?: { page?: number; size?: number; status?: string }) {
     const qs = new URLSearchParams();
     if (params?.page) qs.set("page", String(params.page));
@@ -126,7 +123,6 @@ class ApiClient {
     });
   }
 
-  // Custom Orders
   getCustomOrders(params?: { status?: string }) {
     const qs = new URLSearchParams();
     if (params?.status) qs.set("status", params.status);
@@ -162,28 +158,23 @@ class ApiClient {
     });
   }
 
-  // Customers
   getCustomers() {
     return this.request<any[]>("/api/v1/admin/users");
   }
 
-  // Reviews
   getStoreReviews() {
     return this.getMyStore().then((store) => this.request<any[]>(`/api/v1/discovery/stores/${store.id}/reviews`));
   }
 
-  // Analytics
   getStoreAnalytics(days?: number) {
     const qs = days ? `?days=${days}` : "";
     return this.request<any>(`/api/v1/stores/me/analytics${qs}`);
   }
 
-  // Super Admin — Analytics
   getPlatformAnalytics() {
     return this.request<any>("/api/v1/admin/analytics/platform");
   }
 
-  // Super Admin — Stores
   getAllStores(params?: { page?: number; size?: number; status?: string }) {
     const qs = new URLSearchParams();
     if (params?.page) qs.set("page", String(params.page));
@@ -203,7 +194,6 @@ class ApiClient {
     });
   }
 
-  // Super Admin — Users
   getAllUsers(params?: { page?: number; size?: number; role?: string }) {
     const qs = new URLSearchParams();
     if (params?.page) qs.set("page", String(params.page));
@@ -226,7 +216,6 @@ class ApiClient {
     });
   }
 
-  // Super Admin — Disputes
   getDisputes(params?: { status?: string }) {
     const qs = new URLSearchParams();
     if (params?.status) qs.set("status", params.status);
@@ -240,7 +229,6 @@ class ApiClient {
     });
   }
 
-  // Super Admin — Config
   getPlatformConfig() {
     return this.request<any>("/api/v1/admin/config");
   }
@@ -252,7 +240,6 @@ class ApiClient {
     })));
   }
 
-  // Super Admin — Notifications
   getNotifications(params?: { page?: number; size?: number; unread?: boolean }) {
     const qs = new URLSearchParams();
     if (params?.page) qs.set("page", String(params.page));
@@ -277,7 +264,6 @@ class ApiClient {
     });
   }
 
-  // Super Admin — Audit Log
   getAuditLogs(params?: { page?: number; size?: number; action?: string; userId?: number; from?: string; to?: string }) {
     const qs = new URLSearchParams();
     if (params?.page) qs.set("page", String(params.page));

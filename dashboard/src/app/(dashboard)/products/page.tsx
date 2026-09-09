@@ -28,7 +28,7 @@ export default function ProductsPage() {
         }))
       );
     } catch {
-      // Fallback to mock data if API unavailable
+
       setProducts([
         { id: 1, name: "Classic Ankara Gown", category: "Dresses", price: 25000, stock: 45, status: "PUBLISHED" },
         { id: 2, name: "Mens Agbada Set", category: "Traditional", price: 45000, stock: 12, status: "PUBLISHED" },

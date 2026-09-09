@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Search, Star, Heart } from "lucide-react";
@@ -11,11 +11,12 @@ function ProductsContent() {
   const activeStore = useStore();
   const searchParams = useSearchParams();
   const initialCategory = searchParams.get("category") ?? "";
+  const initialSearch = searchParams.get("search") ?? "";
 
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [loading, setLoading] = useState(true);
 
   const categoryEmojis: Record<string, string> = {
@@ -27,7 +28,7 @@ function ProductsContent() {
     Sets: "🎁",
   };
 
-  const loadProducts = async () => {
+  const loadProducts = useCallback(async () => {
     setLoading(true);
     try {
       const params: any = { size: 50 };
@@ -61,7 +62,7 @@ function ProductsContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeStore.slug, searchQuery, selectedCategory]);
 
   useEffect(() => {
     async function loadCategories() {
@@ -74,11 +75,11 @@ function ProductsContent() {
       }
     }
     loadCategories();
-  }, []);
+  }, [activeStore.categories, activeStore.slug]);
 
   useEffect(() => {
     loadProducts();
-  }, [selectedCategory]);
+  }, [loadProducts]);
 
   const handleSearch = () => {
     loadProducts();

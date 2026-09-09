@@ -6,13 +6,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 
-/**
- * One-time token used to reset a forgotten password.
- *
- * Maps to the {@code password_reset_tokens} table created in V2__identity.sql.
- * Tokens expire 1 hour after creation (shorter than email verification);
- * {@code usedAt} records consumption so a token cannot be replayed.
- */
+
 @Entity
 @Table(name = "password_reset_tokens")
 @EntityListeners(AuditingEntityListener.class)

@@ -41,7 +41,6 @@ class DiscoveryServiceTest {
         idField.set(customer, 10L);
     }
 
-    // ─── Store Reviews ──────────────────────────────────────────────
 
     @Test
     void createStoreReview_savesAndReturns() {
@@ -95,7 +94,6 @@ class DiscoveryServiceTest {
         assertEquals(10L, summary.get("totalReviews"));
     }
 
-    // ─── Product Reviews ────────────────────────────────────────────
 
     @Test
     void createProductReview_savesAndReturns() {
@@ -123,7 +121,6 @@ class DiscoveryServiceTest {
                 () -> service.createProductReview(customer, 1L, 5L, (short) 5, "New", "New"));
     }
 
-    // ─── Favorites ──────────────────────────────────────────────────
 
     @Test
     void addFavorite_savesWhenNotExists() {
@@ -158,7 +155,6 @@ class DiscoveryServiceTest {
         assertTrue(service.isFavorited(customer, FavoriteEntityType.STORE, 1L));
     }
 
-    // ─── Featured Content ───────────────────────────────────────────
 
     @Test
     void getFeaturedStores_queriesActive() {

@@ -101,7 +101,7 @@ export default function AdminSettingsPage() {
         <p className="text-sm text-gray-500 mt-1">Global platform settings and configuration</p>
       </div>
 
-      {/* General Settings */}
+      {}
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
         <div className="flex items-center gap-2">
           <Settings className="w-4 h-4 text-gray-400" />
@@ -129,7 +129,7 @@ export default function AdminSettingsPage() {
         </div>
       </div>
 
-      {/* Financial Settings */}
+      {}
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
         <div className="flex items-center gap-2">
           <Globe className="w-4 h-4 text-gray-400" />
@@ -161,7 +161,7 @@ export default function AdminSettingsPage() {
         </div>
       </div>
 
-      {/* Security Settings */}
+      {}
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
         <div className="flex items-center gap-2">
           <Shield className="w-4 h-4 text-gray-400" />

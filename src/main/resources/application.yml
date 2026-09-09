@@ -9,7 +9,7 @@ spring:
     name: meethybridhub
 
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/meethybridhub}
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/meethybridhub}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
 

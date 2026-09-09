@@ -25,13 +25,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Integration tests for store settings & branding (Phase 3, Week 4):
- *   - GET /stores/me/settings returns defaults (created lazily)
- *   - PUT /stores/me/settings updates branding and records an audit event
- *   - Tenant isolation: a store owner cannot touch another store's settings
- *   - Validation: malformed colors are rejected with 400
- */
+
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -72,7 +66,7 @@ class StoreSettingsIntegrationTest {
                 .andExpect(jsonPath("$.accentColor").value("#0d9488"))
                 .andExpect(jsonPath("$.theme").value("LIGHT"));
 
-        // A settings row was lazily created
+
         assertThat(storeSettingsRepository.findByStoreId(storeId)).isPresent();
     }
 
@@ -115,7 +109,7 @@ class StoreSettingsIntegrationTest {
         String token = registerAndGetToken("settings-c@example.com", "Settings C");
         long storeId = createStore(token, "Settings C Shop");
 
-        // First set the tagline only
+
         mockMvc.perform(put("/api/v1/stores/me/settings")
                         .header("Authorization", "Bearer " + token)
                         .header("X-Store-Id", storeId)
@@ -125,7 +119,7 @@ class StoreSettingsIntegrationTest {
                 .andExpect(jsonPath("$.tagline").value("Only this changes"))
                 .andExpect(jsonPath("$.theme").value("LIGHT"));
 
-        // Then change the theme; tagline must survive
+
         mockMvc.perform(put("/api/v1/stores/me/settings")
                         .header("Authorization", "Bearer " + token)
                         .header("X-Store-Id", storeId)
@@ -154,7 +148,7 @@ class StoreSettingsIntegrationTest {
         String tokenA = registerAndGetToken("settings-e@example.com", "Settings E");
         long storeA = createStore(tokenA, "Settings E Shop");
 
-        // Owner A materializes their settings row with the default theme
+
         mockMvc.perform(get("/api/v1/stores/me/settings")
                         .header("Authorization", "Bearer " + tokenA)
                         .header("X-Store-Id", storeA))
@@ -164,7 +158,7 @@ class StoreSettingsIntegrationTest {
         String tokenB = registerAndGetToken("settings-f@example.com", "Settings F");
         createStore(tokenB, "Settings F Shop");
 
-        // Owner B tries to read/store A's settings via A's tenant context -> 403
+
         mockMvc.perform(get("/api/v1/stores/me/settings")
                         .header("Authorization", "Bearer " + tokenB)
                         .header("X-Store-Id", storeA))
@@ -177,7 +171,7 @@ class StoreSettingsIntegrationTest {
                         .content("{\"theme\": \"DARK\"}"))
                 .andExpect(status().isForbidden());
 
-        // A's settings were never touched
+
         StoreSettings settings = storeSettingsRepository.findByStoreId(storeA).orElseThrow();
         assertThat(settings.getTheme()).isEqualTo(StoreTheme.LIGHT);
     }
@@ -191,9 +185,6 @@ class StoreSettingsIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
-    // ------------------------------------------------------------------
-    // Helpers
-    // ------------------------------------------------------------------
 
     private String registerAndGetToken(String email, String fullName) throws Exception {
         String body = mockMvc.perform(post("/api/v1/auth/register")

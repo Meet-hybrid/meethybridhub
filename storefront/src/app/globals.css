@@ -20,7 +20,7 @@ body {
 
 ::selection { background: #0B4A2B; color: #FAFAF8; }
 
-/* Store-specific theme overrides */
+
 body[data-store="divinez-signature"] input,
 body[data-store="divinez-signature"] textarea,
 body[data-store="divinez-signature"] select { background-color: #fff; color: #0B4A2B; border-color: #0B4A2B20; }

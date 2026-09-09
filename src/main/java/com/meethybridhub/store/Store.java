@@ -8,17 +8,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 
-/**
- * A tenant store on the platform.
- *
- * The store IS the tenant: every store-scoped table carries a {@code store_id}
- * column pointing at this entity (shared-schema multi-tenancy). The owner is a
- * platform-level user (users themselves are NOT tenant-scoped — customer
- * accounts are shared across stores).
- *
- * {@code slug} doubles as the store's subdomain, which StoreFilter uses to
- * resolve the tenant from the request Host header.
- */
+
 @Entity
 @Table(name = "stores")
 @EntityListeners(AuditingEntityListener.class)

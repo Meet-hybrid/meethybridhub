@@ -47,7 +47,6 @@ public class DiscoveryService {
         this.storeService = storeService;
     }
 
-    // ─── Store Reviews ──────────────────────────────────────────────
 
     public StoreReview createStoreReview(User customer, Long storeId, short rating,
                                           String title, String comment) {
@@ -76,7 +75,6 @@ public class DiscoveryService {
         return summary;
     }
 
-    // ─── Product Reviews ────────────────────────────────────────────
 
     public ProductReview createProductReview(User customer, Long storeId, Long productId,
                                               short rating, String title, String comment) {
@@ -96,7 +94,6 @@ public class DiscoveryService {
         return productReviewRepo.findByProductIdOrderByCreatedAtDesc(productId);
     }
 
-    // ─── Favorites ──────────────────────────────────────────────────
 
     @CacheEvict(value = "featured", allEntries = true)
     public UserFavorite addFavorite(User user, FavoriteEntityType entityType, Long entityId) {
@@ -123,7 +120,6 @@ public class DiscoveryService {
         return favoriteRepo.findByUserIdAndEntityTypeOrderByCreatedAtDesc(user.getId(), entityType);
     }
 
-    // ─── Featured Content ───────────────────────────────────────────
 
     @Cacheable(value = "featured", key = "'stores'")
     public List<FeaturedContent> getFeaturedStores() {
@@ -144,22 +140,20 @@ public class DiscoveryService {
         return featuredRepo.findAllActive(Instant.now());
     }
 
-    // ─── Discovery / Search ─────────────────────────────────────────
 
     public List<Store> searchStores(String query, int page, int size) {
-        // Simple LIKE search on store name/description
+
         if (query == null || query.isBlank()) {
             return storeRepository.findAll(PageRequest.of(page, size, Sort.by("createdAt").descending()))
                     .getContent();
         }
-        // Use a native query via store name pattern for now
+
         return storeRepository.findAll(PageRequest.of(page, size)).getContent().stream()
                 .filter(s -> s.getName().toLowerCase().contains(query.toLowerCase())
                         || (s.getDescription() != null && s.getDescription().toLowerCase().contains(query.toLowerCase())))
                 .toList();
     }
 
-    // ─── Helpers ────────────────────────────────────────────────────
 
     private void validateRating(short rating) {
         if (rating < 1 || rating > 5) {

@@ -47,7 +47,7 @@ export default function RegisterPage() {
   return (
     <div className={`min-h-[80vh] flex items-center justify-center px-4 py-16`}>
       <div className="w-full max-w-md">
-        {/* Header */}
+        {}
         <div className="text-center mb-10">
           <h1 className={`text-3xl font-serif font-bold mb-2 ${isDivinez ? "text-[#0B4A2B]" : "text-[#f7f1e8]"}`}>
             Create your account

@@ -2,6 +2,9 @@ export type StoreConfig = {
   slug: string;
   name: string;
   shortName: string;
+  parentBrand: string;
+  subBrand: string;
+  subBrandDescriptor: string;
   descriptor: string;
   location: string;
   tagline: string;
@@ -21,11 +24,14 @@ export const storeConfigs: Record<string, StoreConfig> = {
     slug: "divinez-signature",
     name: "DivinezSignature",
     shortName: "Divinez",
-    descriptor: "Handcrafted Beadwork · Made in Lagos",
-    location: "Lagos, Nigeria",
+    parentBrand: "DivinezSignature",
+    subBrand: "Beads by Divine",
+    subBrandDescriptor: "A DivinezSignature subsidiary",
+    descriptor: "Handcrafted Beadwork · Made in Abuja",
+    location: "Abuja, Nigeria",
     tagline: "Beads with a point of view.",
     description: "Handcrafted luxury beaded accessories designed to earn its place in your collection.",
-    heroLabel: "Handcrafted Beadwork · Made in Lagos",
+    heroLabel: "Handcrafted Beadwork · Made in Abuja",
     heroTitle: "Handcrafted luxury, designed to earn",
     heroAccent: "its place in your collection.",
     heroBody: "Explore bespoke crystal charm bracelets, beaded waist chains, and custom artisan jewelry tailored for modern elegance.",
@@ -48,7 +54,7 @@ export const storeConfigs: Record<string, StoreConfig> = {
       { href: "/custom-order", label: "Custom pieces" },
     ],
     features: [
-      { title: "Handcrafted in Lagos", description: "Every piece made with care in our studio" },
+      { title: "Handcrafted in Abuja", description: "Every piece made with care in our studio" },
       { title: "Gift-ready packaging", description: "Beautifully wrapped for meaningful moments" },
       { title: "Custom orders welcome", description: "Bespoke colors, sizes, and designs available" },
     ],
@@ -57,6 +63,9 @@ export const storeConfigs: Record<string, StoreConfig> = {
     slug: "meethybridhub",
     name: "MeethybridHub",
     shortName: "Meethybrid",
+    parentBrand: "MeethybridHub",
+    subBrand: "MeethybridHub",
+    subBrandDescriptor: "The daily edit",
     descriptor: "Clothing · Footwear · Lagos",
     location: "Lagos, Nigeria",
     tagline: "A considered way to dress.",

@@ -38,7 +38,7 @@ export default function LoginPage() {
             <Store className="w-7 h-7 text-white" />
           </div>
         </div>
-        <p className="mt-8 text-center text-[11px] tracking-[0.2em] uppercase text-[#9d8b7b]">MeethybridHub Admin</p>
+        <p className="mt-8 text-center text-[11px] tracking-[0.2em] uppercase text-[#9d8b7b]">DivinezSignature Admin</p>
         <h2 className="mt-3 text-center text-3xl font-bold text-[#f7f1e8]">
           Sign in to your dashboard
         </h2>

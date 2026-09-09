@@ -82,7 +82,7 @@ export default function CustomOrdersPage() {
       setNewMessage("");
       loadMessages(selectedRequest.id);
     } catch {
-      // Optimistically add message
+
       setMessages((prev) => [
         ...prev,
         {

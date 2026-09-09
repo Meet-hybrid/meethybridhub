@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.math.BigDecimal;
 import java.util.List;
 
-/** Public, read-only storefront API. Every query is explicitly scoped by store slug. */
+
 @RestController
 @RequestMapping("/api/v1/public/stores/{slug}")
 public class PublicCatalogController {

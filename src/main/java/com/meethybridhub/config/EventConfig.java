@@ -9,16 +9,11 @@ import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 
-/**
- * Lightweight event infrastructure using Spring's ApplicationEventPublisher.
- * Events are published synchronously by default; listeners annotated with
- * {@code @Async} run on a separate thread pool.
- */
+
 @Configuration
 @EnableAsync
 public class EventConfig {
 
-    // ─── Base event ─────────────────────────────────────────────────
 
     public static abstract class DomainEvent extends ApplicationEvent {
         private final Instant occurredAt;
@@ -31,7 +26,6 @@ public class EventConfig {
         public Instant getOccurredAt() { return occurredAt; }
     }
 
-    // ─── Concrete events ────────────────────────────────────────────
 
     public static class OrderCreatedEvent extends DomainEvent {
         private final Long orderId;
@@ -95,7 +89,6 @@ public class EventConfig {
         public String getEmail() { return email; }
     }
 
-    // ─── Event publisher helper ─────────────────────────────────────
 
     @Component
     public static class EventPublisher {

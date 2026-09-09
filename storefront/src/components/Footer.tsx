@@ -13,12 +13,19 @@ export default function Footer() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="md:col-span-2">
-              <h2 className="font-serif font-bold text-2xl text-[#FAFAF8] tracking-tight mb-4">{activeStore.name}</h2>
+              <p className="text-xs text-[#FAFAF8]/60 tracking-[0.18em] uppercase mb-1">{activeStore.parentBrand}</p>
+              <h2 className="font-serif font-bold text-2xl text-[#FAFAF8] tracking-tight mb-4">{activeStore.subBrand}</h2>
               <p className="text-sm text-[#FAFAF8]/80 max-w-md leading-relaxed">
                 {activeStore.description}
               </p>
+              <p className="mt-3 text-xs text-[#FAFAF8]/60">{activeStore.subBrandDescriptor}</p>
               <div className="mt-4 flex items-center gap-2">
-                <span className="text-xs text-[#FAFAF8]/60 tracking-widest uppercase">Handcrafted Beadwork · Made in Lagos</span>
+                <span className="text-xs text-[#FAFAF8]/60 tracking-widest uppercase">Handcrafted Beadwork · Made in Abuja</span>
+              </div>
+              <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm">
+                <a href="https://wa.me/2348034704909" target="_blank" rel="noreferrer" className="text-[#FAFAF8]/80 hover:text-[#FAFAF8] transition-colors">📲 WhatsApp</a>
+                <a href="https://www.instagram.com/beads_bydivine?igsh=M2l5ZzcybXVldnNn" target="_blank" rel="noreferrer" className="text-[#FAFAF8]/80 hover:text-[#FAFAF8] transition-colors">📸 Instagram</a>
+                <a href="https://www.facebook.com/share/1DWr8Z45Q7/?mibextid=wwXIfr" target="_blank" rel="noreferrer" className="text-[#FAFAF8]/80 hover:text-[#FAFAF8] transition-colors">Facebook</a>
               </div>
             </div>
 
@@ -42,7 +49,7 @@ export default function Footer() {
 
           <div className="border-t border-[#FAFAF8]/20 mt-8 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-xs text-[#FAFAF8]/60">&copy; {new Date().getFullYear()} {activeStore.name}. All rights reserved.</p>
-            <p className="text-xs text-[#FAFAF8]/60">Handcrafted with love in Lagos, Nigeria</p>
+            <p className="text-xs text-[#FAFAF8]/60">Handcrafted with love in Abuja, Nigeria</p>
           </div>
         </div>
       </footer>

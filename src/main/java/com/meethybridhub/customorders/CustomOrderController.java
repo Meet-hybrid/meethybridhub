@@ -31,7 +31,6 @@ public class CustomOrderController {
         this.userService = userService;
     }
 
-    // ─── Requests ───────────────────────────────────────────────────
 
     @PostMapping
     @PreAuthorize("isAuthenticated()")
@@ -86,7 +85,6 @@ public class CustomOrderController {
         return ResponseEntity.ok(RequestResponse.from(updated));
     }
 
-    // ─── Quotes ─────────────────────────────────────────────────────
 
     @PostMapping("/{requestId}/quotes")
     @PreAuthorize("hasAnyRole('STORE_OWNER', 'ADMIN')")
@@ -131,7 +129,6 @@ public class CustomOrderController {
         return ResponseEntity.ok(QuoteResponse.from(service.rejectQuote(user, quoteId)));
     }
 
-    // ─── Conversation ───────────────────────────────────────────────
 
     @PostMapping("/{requestId}/messages")
     @PreAuthorize("isAuthenticated()")
@@ -153,7 +150,6 @@ public class CustomOrderController {
                         .map(MessageResponse::from).toList());
     }
 
-    // ─── Attachments ────────────────────────────────────────────────
 
     @PostMapping("/{requestId}/attachments")
     @PreAuthorize("isAuthenticated()")
@@ -177,7 +173,6 @@ public class CustomOrderController {
                         .map(AttachmentResponse::from).toList());
     }
 
-    // ─── Convert to Order ───────────────────────────────────────────
 
     @PostMapping("/{requestId}/convert")
     @PreAuthorize("hasAnyRole('STORE_OWNER', 'ADMIN')")
@@ -189,7 +184,6 @@ public class CustomOrderController {
                 "message", "Custom order converted to order successfully"));
     }
 
-    // ─── DTOs ───────────────────────────────────────────────────────
 
     public record CreateRequestRequest(
             @NotBlank @Size(max = 255) String title,

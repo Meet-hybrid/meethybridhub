@@ -38,23 +38,24 @@ export default function AboutPage() {
   if (isDivinez) {
     return (
       <div className="min-h-screen bg-[#FAFAF8] text-[#0B4A2B]">
-        {/* Hero */}
+        {}
         <section className="about-hero-divinez py-20">
           <div className="max-w-7xl mx-auto px-4 text-center">
-            <p className="text-[#FAFAF8]/80 font-medium text-sm tracking-widest uppercase mb-4">{activeStore.name}</p>
+            <p className="text-[#FAFAF8]/80 font-medium text-sm tracking-widest uppercase mb-2">{activeStore.subBrand}</p>
+            <p className="text-[#FAFAF8]/60 text-xs tracking-widest uppercase mb-4">{activeStore.subBrandDescriptor}</p>
             <h1 className="text-4xl md:text-5xl font-serif font-bold text-[#FAFAF8] mb-4">The story behind the store</h1>
             <p className="text-[#FAFAF8]/80 text-lg max-w-2xl mx-auto">{activeStore.description}</p>
           </div>
         </section>
 
-        {/* Our Point of View */}
+        {}
         <section className="py-16">
           <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
               <p className="eyebrow">Our point of view</p>
               <h2 className="text-3xl font-serif font-bold text-[#0B4A2B] mb-6">{activeStore.tagline}</h2>
               <div className="space-y-4 text-[#0B4A2B]/70 leading-relaxed">
-                <p>{activeStore.name} is a Lagos-based brand built around the pleasure of finding something that feels exactly right.</p>
+                <p>{activeStore.name} is an Abuja-based brand built around the pleasure of finding something that feels exactly right.</p>
                 <p>We make and curate beaded accessories with warmth, patience, and a respect for the craft. Each piece is designed to carry a little personality.</p>
                 <p>From a small everyday bracelet to a statement bag, our pieces are made to be worn, shared, and remembered.</p>
               </div>
@@ -72,7 +73,7 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* What We Offer */}
+        {}
         <section className="py-16 bg-white border-y border-[#0B4A2B]/10">
           <div className="max-w-7xl mx-auto px-4">
             <p className="eyebrow text-center">The experience</p>
@@ -89,7 +90,7 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* Why Us */}
+        {}
         <section className="py-16">
           <div className="max-w-7xl mx-auto px-4">
             <p className="eyebrow text-center">What matters to us</p>
@@ -105,7 +106,7 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* Contact */}
+        {}
         <section id="contact" className="py-16 bg-white border-t border-[#0B4A2B]/10">
           <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-2 gap-12">
             <div>
@@ -114,8 +115,12 @@ export default function AboutPage() {
               <p className="text-[#0B4A2B]/70 mb-8">Have a question about our {subject}? Need help finding the right piece? We&apos;d love to hear from you.</p>
               <div className="space-y-4 text-sm">
                 <p className="flex items-center gap-4"><Mail className="text-[#0B4A2B]" /> hello@{activeStore.slug}.com</p>
-                <p className="flex items-center gap-4"><Phone className="text-[#0B4A2B]" /> WhatsApp support</p>
+                <p className="flex items-center gap-4"><Phone className="text-[#0B4A2B]" /> <a href="https://wa.me/2348034704909" target="_blank" rel="noreferrer" className="hover:underline">WhatsApp support</a></p>
                 <p className="flex items-center gap-4"><MapPin className="text-[#0B4A2B]" /> {activeStore.location}</p>
+              </div>
+              <div className="mt-6 flex flex-wrap gap-4 text-sm font-medium">
+                <a href="https://www.instagram.com/beads_bydivine?igsh=M2l5ZzcybXVldnNn" target="_blank" rel="noreferrer" className="text-[#0B4A2B] hover:underline">Instagram</a>
+                <a href="https://www.facebook.com/share/1DWr8Z45Q7/?mibextid=wwXIfr" target="_blank" rel="noreferrer" className="text-[#0B4A2B] hover:underline">Facebook</a>
               </div>
             </div>
             <div className="about-form">

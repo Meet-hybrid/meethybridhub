@@ -8,15 +8,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.Instant;
 import java.util.Set;
 
-/**
- * User entity representing a platform user (customer, store owner, or admin).
- *
- * This is a multi‑tenant‑aware entity, though tenant isolation (`store_id`)
- * will be added in Phase 3. For now, all users exist at the platform level.
- *
- * Roles are stored as a comma‑separated string for simplicity in Phase 2.
- * When RBAC complexity grows (Phase 8), we'll migrate to a proper role‑junction table.
- */
+
 @Entity
 @Table(name = "users")
 @EntityListeners(AuditingEntityListener.class)
@@ -36,7 +28,7 @@ public class User {
     private String fullName;
 
     @Column(nullable = false)
-    private String roles = "CUSTOMER";  // Default role
+    private String roles = "CUSTOMER";
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
@@ -45,11 +37,7 @@ public class User {
     @Column(name = "email_verified", nullable = false)
     private boolean emailVerified = false;
 
-    /**
-     * Incremented on every password change. JWTs embed this value and are
-     * rejected when it no longer matches, so a password reset instantly
-     * invalidates all previously issued tokens.
-     */
+
     @Column(name = "password_version", nullable = false)
     private int passwordVersion = 0;
 
@@ -64,17 +52,17 @@ public class User {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    // Default constructor for JPA
+
     protected User() {}
 
-    // Primary constructor for creating new users
+
     public User(String email, String passwordHash, String fullName) {
         this.email = email;
         this.passwordHash = passwordHash;
         this.fullName = fullName;
     }
 
-    // Getters and setters
+
     public Long getId() {
         return id;
     }
@@ -111,16 +99,12 @@ public class User {
         this.roles = roles;
     }
 
-    /**
-     * Helper method to check if user has a specific role.
-     */
+
     public boolean hasRole(String role) {
         return Set.of(roles.split(",")).contains(role);
     }
 
-    /**
-     * Helper method to add a role if not already present.
-     */
+
     public void addRole(String role) {
         if (!hasRole(role)) {
             this.roles = this.roles.isEmpty() ? role : this.roles + "," + role;
@@ -147,10 +131,7 @@ public class User {
         return passwordVersion;
     }
 
-    /**
-     * Invalidates every previously issued JWT for this user. Call after ANY
-     * password change (reset or self-service).
-     */
+
     public void bumpPasswordVersion() {
         this.passwordVersion++;
     }
@@ -171,16 +152,12 @@ public class User {
         return updatedAt;
     }
 
-    /**
-     * Business logic: whether the user is allowed to authenticate.
-     */
+
     public boolean canAuthenticate() {
         return status == UserStatus.ACTIVE && emailVerified;
     }
 
-    /**
-     * Business logic: record a successful login.
-     */
+
     public void recordLogin() {
         this.lastLoginAt = Instant.now();
     }
@@ -196,13 +173,11 @@ public class User {
                 '}';
     }
 
-    /**
-     * User account lifecycle states.
-     */
+
     public enum UserStatus {
-        PENDING,    // Created but email not verified
-        ACTIVE,     // Verified and can log in
-        SUSPENDED,  // Temporarily blocked
-        DELETED     // Soft‑deleted (data retained for compliance)
+        PENDING,
+        ACTIVE,
+        SUSPENDED,
+        DELETED
     }
 }

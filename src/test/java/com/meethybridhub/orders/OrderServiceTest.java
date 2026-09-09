@@ -112,7 +112,7 @@ class OrderServiceTest {
         ReflectionTestUtils.setField(product, "id", 10L);
         ProductVariant variant = new ProductVariant(7L, product, "SKU-1", "42", "Black", null);
         ReflectionTestUtils.setField(variant, "id", 11L);
-        Inventory stock = new Inventory(7L, variant, 1); // only 1 in stock
+        Inventory stock = new Inventory(7L, variant, 1);
         when(variants.findByIdAndStoreId(11L, 7L)).thenReturn(Optional.of(variant));
         when(inventory.findByStoreIdAndVariantId(7L, 11L)).thenReturn(Optional.of(stock));
 

@@ -63,7 +63,7 @@ export default function ProductDetailPage() {
       }
     }
     load();
-  }, [productId]);
+  }, [activeStore.slug, productId]);
 
   useEffect(() => {
     if (product?.variants) {

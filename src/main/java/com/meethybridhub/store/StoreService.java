@@ -20,15 +20,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
-/**
- * Business logic for stores and store-scoped data.
- *
- * The key method is {@link #getCurrentTenantStore(User)}: it combines the
- * tenant resolved by {@link StoreFilter} (via {@link TenantContext}) with the
- * authenticated user, enforcing that a store owner can only ever reach their
- * OWN store (admins may access any store). Every other store-scoped operation
- * funnels through it — that is the isolation guarantee at the application layer.
- */
+
 @Service
 @Transactional
 public class StoreService {
@@ -53,10 +45,7 @@ public class StoreService {
         this.auditLogService = auditLogService;
     }
 
-    /**
-     * Register a new store owned by {@code owner}. The owner is granted the
-     * STORE_OWNER role on first store creation.
-     */
+
     @CacheEvict(value = "stores", allEntries = true)
     public Store createStore(User owner, String name, String description) {
         String slug = uniqueSlug(name);
@@ -76,22 +65,14 @@ public class StoreService {
         return saved;
     }
 
-    /**
-     * The ID of the active store owned by {@code userId}, if any. Used at JWT
-     * issuance so tokens carry a {@code storeId} claim for tenant resolution.
-     */
+
     @Cacheable(value = "stores", key = "'owner:' + #userId")
     public Optional<Long> findActiveStoreIdForOwner(Long userId) {
         return storeRepository.findByOwnerIdAndStatus(userId, StoreStatus.ACTIVE)
                 .map(Store::getId);
     }
 
-    /**
-     * The store the current request operates on — the tenant from
-     * {@link TenantContext}, checked against the authenticated user.
-     *
-     * @throws ForbiddenException if the user is neither the store's owner nor an admin
-     */
+
     public Store getCurrentTenantStore(User user) {
         long storeId = TenantContext.requireStoreId();
         Store store = storeRepository.findById(storeId)
@@ -103,13 +84,13 @@ public class StoreService {
         return store;
     }
 
-    /** All domains of the current tenant store (tenant-scoped read). */
+
     public List<StoreDomain> getDomainsForCurrentTenant(User user) {
         Store store = getCurrentTenantStore(user);
         return storeDomainRepository.findAllByStoreId(store.getId());
     }
 
-    /** Register a new domain for the current tenant store. */
+
     public StoreDomain addDomain(User user, String domain) {
         Store store = getCurrentTenantStore(user);
         String normalized = normalizeDomain(domain);
@@ -125,14 +106,7 @@ public class StoreService {
         return saved;
     }
 
-    /**
-     * Branding/settings of the current tenant store, created lazily on first
-     * access with defaults so a new store always has valid branding.
-     *
-     * Race-safe: two concurrent first GETs both miss in {@code findByStoreId},
-     * and one loses the unique {@code store_id} constraint — caught below and
-     * turned into a re-query (same guard as PlatformChargeService).
-     */
+
     @Cacheable(value = "stores", key = "'settings:' + #user.id")
     public StoreSettings getSettingsForCurrentTenant(User user) {
         Store store = getCurrentTenantStore(user);
@@ -145,8 +119,8 @@ public class StoreService {
                     try {
                         return storeSettingsRepository.save(new StoreSettings(storeId));
                     } catch (DataIntegrityViolationException e) {
-                        // Lost the find-then-save race; the unique store_id is
-                        // the real guard. Re-query the winner's row.
+
+
                         return storeSettingsRepository.findByStoreId(storeId)
                                 .orElseThrow(() -> new IllegalStateException(
                                         "Store settings vanished after concurrent creation: " + storeId));
@@ -154,11 +128,7 @@ public class StoreService {
                 });
     }
 
-    /**
-     * Update the branding/settings of the current tenant store. Only fields
-     * present in the request change; the rest keep their current values.
-     * Changes are recorded in the audit trail.
-     */
+
     @CacheEvict(value = "stores", key = "'settings:' + #user.id")
     public StoreSettings updateSettingsForCurrentTenant(User user, StoreSettingsUpdate update) {
         Store store = getCurrentTenantStore(user);
@@ -190,11 +160,7 @@ public class StoreService {
         return saved;
     }
 
-    /**
-     * List all stores, optionally filtered by status (admin only).
-     *
-     * @throws BadRequestException for an unknown status value
-     */
+
     @Cacheable(value = "stores", key = "'list:' + (#status != null ? #status : 'all')")
     public List<Store> listStores(String status) {
         if (status != null && !status.isBlank()) {
@@ -208,10 +174,7 @@ public class StoreService {
         return storeRepository.findAll();
     }
 
-    /**
-     * Set a store's lifecycle status (admin only). The acting admin is recorded
-     * in the audit trail so status changes are attributable.
-     */
+
     public Store updateStoreStatus(Long actorUserId, Long storeId, StoreStatus status) {
         Store store = storeRepository.findById(storeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Store not found: " + storeId));
@@ -237,7 +200,7 @@ public class StoreService {
         return slug;
     }
 
-    /** "Divine Signature" -> "divine-signature" */
+
     private String slugify(String name) {
         return name.trim().toLowerCase(Locale.ROOT)
                 .replaceAll("[^a-z0-9]+", "-")

@@ -1,11 +1,6 @@
 package com.meethybridhub.identity;
 
-/**
- * Kinds of security-relevant events recorded in the {@code audit_log} table
- * (see V2__identity.sql). Stored as the enum name in a VARCHAR(100) column —
- * appending values is safe; renaming existing values is NOT (historic rows
- * would silently change meaning).
- */
+
 public enum AuditEventType {
     REGISTER,
     LOGIN_SUCCESS,

@@ -49,7 +49,7 @@ export default function SettingsPage() {
           }));
         }
       } catch {
-        // Use defaults
+
         setForm({
           storeName: "Divine'zSignatures",
           tagline: "Handcrafted Bead Accessories — Bags, Bracelets, Necklaces & More",
@@ -81,7 +81,7 @@ export default function SettingsPage() {
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch {
-      // Still show success for UX
+
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } finally {

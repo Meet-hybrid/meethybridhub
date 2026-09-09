@@ -50,13 +50,12 @@ public class CustomOrderService {
         this.storeService = storeService;
     }
 
-    // ─── Request CRUD ───────────────────────────────────────────────
 
     public CustomOrderRequest createRequest(User customer, Long storeId, String title,
                                              String description, BigDecimal budgetMin,
                                              BigDecimal budgetMax, Instant deadline) {
         if (customer.getRoles() == null || !customer.getRoles().contains("CUSTOMER")) {
-            // Customers can always create requests; this is a soft check.
+
         }
 
         CustomOrderRequest request = new CustomOrderRequest(
@@ -105,7 +104,6 @@ public class CustomOrderService {
         return saved;
     }
 
-    // ─── Quotes ─────────────────────────────────────────────────────
 
     public Quote createQuote(User storeOwner, Long requestId, BigDecimal price,
                               String currency, Integer estimatedDays, String terms,
@@ -158,7 +156,7 @@ public class CustomOrderService {
         request.setStatus(CustomOrderStatus.ACCEPTED);
         requestRepository.save(request);
 
-        // Reject other pending quotes for the same request
+
         quoteRepository.findByRequestIdOrderByCreatedAtDesc(request.getId()).stream()
                 .filter(q -> !q.getId().equals(quoteId) && q.getStatus() == QuoteStatus.PENDING)
                 .forEach(q -> {
@@ -193,7 +191,6 @@ public class CustomOrderService {
         return quoteRepository.findByRequestIdOrderByCreatedAtDesc(requestId);
     }
 
-    // ─── Conversation ───────────────────────────────────────────────
 
     public CustomOrderConversation sendMessage(User sender, Long requestId, String message) {
         CustomOrderRequest request = getRequest(requestId);
@@ -202,7 +199,7 @@ public class CustomOrderService {
         CustomOrderConversation msg = new CustomOrderConversation(request, sender, message.trim());
         CustomOrderConversation saved = conversationRepository.save(msg);
 
-        // Move to IN_REVIEW if still OPEN
+
         if (request.getStatus() == CustomOrderStatus.OPEN) {
             request.setStatus(CustomOrderStatus.IN_REVIEW);
             requestRepository.save(request);
@@ -216,7 +213,6 @@ public class CustomOrderService {
         return conversationRepository.findByRequestIdOrderByCreatedAtAsc(requestId);
     }
 
-    // ─── Attachments ────────────────────────────────────────────────
 
     public CustomOrderAttachment addAttachment(User uploader, Long requestId,
                                                 String fileUrl, String fileName,
@@ -233,7 +229,6 @@ public class CustomOrderService {
         return attachmentRepository.findByRequestIdOrderByCreatedAtAsc(requestId);
     }
 
-    // ─── Convert to Order ───────────────────────────────────────────
 
     public Order convertToOrder(Long requestId) {
         CustomOrderRequest request = getRequest(requestId);
@@ -268,14 +263,13 @@ public class CustomOrderService {
         return saved;
     }
 
-    // ─── Helpers ────────────────────────────────────────────────────
 
     private void ensureStoreAccess(User user, Long storeId) {
         Long resolvedStoreId = TenantContext.getStoreId().orElse(null);
         if (resolvedStoreId != null && resolvedStoreId.equals(storeId)) {
-            return; // StoreFilter resolved this tenant — OK
+            return;
         }
-        // Fallback: admin or owner check via StoreService
+
         storeService.getCurrentTenantStore(user);
     }
 

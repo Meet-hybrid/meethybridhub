@@ -23,13 +23,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Integration tests for the multi-tenancy middleware (Hybrid's Card 1):
- *   - StoreFilter resolves the tenant from the X-Store-Id header / subdomain
- *   - Store creation grants the STORE_OWNER role
- *   - Cross-store data isolation (a store can never read another store's data)
- *   - Ownership enforcement (a store owner cannot act on someone else's store)
- */
+
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -81,8 +75,8 @@ class StoreTenantIsolationTest {
 
     @Test
     void tenantResolvedFromJwtClaimAfterLogin() throws Exception {
-        // A token issued at login (after the store exists) carries a storeId
-        // claim, so store-owner dashboards need no X-Store-Id header or subdomain.
+
+
         String registerToken = registerAndGetToken("claim@example.com", "Claim Owner");
         long storeId = createStore(registerToken, "Claim Shop");
 
@@ -93,7 +87,7 @@ class StoreTenantIsolationTest {
                 .andReturn().getResponse().getContentAsString();
         String accessToken = objectMapper.readTree(loginBody).get("accessToken").asText();
 
-        // No X-Store-Id header, bare Host — the claim alone resolves the tenant.
+
         mockMvc.perform(get("/api/v1/stores/me")
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
@@ -103,14 +97,14 @@ class StoreTenantIsolationTest {
 
     @Test
     void explicitTenantSourcesTakePrecedenceOverJwtClaim() throws Exception {
-        // Owner A owns store "Prec A" (slug prec-a); owner B owns "Prec B" (slug prec-b)
+
         String tokenA = registerAndGetToken("prec-a@example.com", "Prec A");
         createStore(tokenA, "Prec A");
 
         String tokenB = registerAndGetToken("prec-b@example.com", "Prec B");
         long storeB = createStore(tokenB, "Prec B");
 
-        // Login as owner A -> token carries a claim for store A
+
         String loginBody = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\": \"prec-a@example.com\", \"password\": \"" + PASSWORD + "\"}"))
@@ -118,13 +112,13 @@ class StoreTenantIsolationTest {
                 .andReturn().getResponse().getContentAsString();
         String accessToken = objectMapper.readTree(loginBody).get("accessToken").asText();
 
-        // (1) Subdomain of store B beats the claim -> tenant is B -> not owner -> 403
+
         mockMvc.perform(get("/api/v1/stores/me")
                         .header("Authorization", "Bearer " + accessToken)
                         .header("Host", "prec-b.meethybridhub.com"))
                 .andExpect(status().isForbidden());
 
-        // (2) X-Store-Id of store B beats the claim -> 403 for owner A
+
         mockMvc.perform(get("/api/v1/stores/me")
                         .header("Authorization", "Bearer " + accessToken)
                         .header("X-Store-Id", storeB))
@@ -133,7 +127,7 @@ class StoreTenantIsolationTest {
 
     @Test
     void refreshTokenPicksUpNewlyCreatedStore() throws Exception {
-        // Login BEFORE creating the store -> no claim in the original token
+
         String registerToken = registerAndGetToken("refresh-claim@example.com", "Refresh Claim");
         String loginBody = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -142,7 +136,7 @@ class StoreTenantIsolationTest {
                 .andReturn().getResponse().getContentAsString();
         String refreshToken = objectMapper.readTree(loginBody).get("refreshToken").asText();
 
-        // Create the store, then refresh -> the new access token carries the claim
+
         long storeId = createStore(registerToken, "Refresh Claim Shop");
 
         String refreshBody = mockMvc.perform(post("/api/v1/auth/refresh")
@@ -161,7 +155,7 @@ class StoreTenantIsolationTest {
     @Test
     void tenantResolvedFromSubdomain() throws Exception {
         String token = registerAndGetToken("owner-c@example.com", "Owner C");
-        long storeId = createStore(token, "Subdomain Shop"); // slug: subdomain-shop
+        long storeId = createStore(token, "Subdomain Shop");
 
         mockMvc.perform(get("/api/v1/stores/me")
                         .header("Authorization", "Bearer " + token)
@@ -172,17 +166,17 @@ class StoreTenantIsolationTest {
 
     @Test
     void domainsAreIsolatedBetweenStores() throws Exception {
-        // Store A with its own domain
+
         String tokenA = registerAndGetToken("iso-a@example.com", "Isolation A");
         long storeA = createStore(tokenA, "Isolation A");
         addDomain(tokenA, storeA, "store-a.example.com");
 
-        // Store B with its own domain
+
         String tokenB = registerAndGetToken("iso-b@example.com", "Isolation B");
         long storeB = createStore(tokenB, "Isolation B");
         addDomain(tokenB, storeB, "store-b.example.com");
 
-        // Tenant A sees only A's domain
+
         String bodyA = mockMvc.perform(get("/api/v1/stores/me/domains")
                         .header("Authorization", "Bearer " + tokenA)
                         .header("X-Store-Id", storeA))
@@ -191,7 +185,7 @@ class StoreTenantIsolationTest {
         assertThat(objectMapper.readTree(bodyA)).hasSize(1);
         assertThat(objectMapper.readTree(bodyA).get(0).get("domain").asText()).isEqualTo("store-a.example.com");
 
-        // Tenant B sees only B's domain
+
         String bodyB = mockMvc.perform(get("/api/v1/stores/me/domains")
                         .header("Authorization", "Bearer " + tokenB)
                         .header("X-Store-Id", storeB))
@@ -209,7 +203,7 @@ class StoreTenantIsolationTest {
         String tokenB = registerAndGetToken("cross-b@example.com", "Cross B");
         createStore(tokenB, "Cross B");
 
-        // Owner B tries to operate on store A -> 403
+
         mockMvc.perform(get("/api/v1/stores/me")
                         .header("Authorization", "Bearer " + tokenB)
                         .header("X-Store-Id", storeA))
@@ -221,20 +215,13 @@ class StoreTenantIsolationTest {
         String token = registerAndGetToken("no-tenant@example.com", "No Tenant");
         createStore(token, "No Tenant Shop");
 
-        // Authenticated but no X-Store-Id header and bare Host -> no tenant
+
         mockMvc.perform(get("/api/v1/stores/me")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isBadRequest());
     }
 
-    // ------------------------------------------------------------------
-    // Helpers
-    // ------------------------------------------------------------------
 
-    /**
-     * Register a user and verify their email, so the returned access token is
-     * actually usable (the JWT filter rejects unverified accounts).
-     */
     private String registerAndGetToken(String email, String fullName) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -267,7 +254,7 @@ class StoreTenantIsolationTest {
         JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());
         long storeId = body.get("id").asLong();
 
-        // Store created -> owner now has a store
+
         assertThat(storeId).isPositive();
         return storeId;
     }
