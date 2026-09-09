@@ -15,11 +15,7 @@ import java.util.Map;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Integration tests for the email-flood protection on the email-sending
- * endpoints (resend-verification / reset-password). Uses the test-profile
- * caps: 3 emails per address, 10 per IP, per 15-minute window.
- */
+
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -41,12 +37,12 @@ class EmailSendRateLimitIntegrationTest {
     void resendVerificationIsLimitedPerEmail() throws Exception {
         registerPending("flood-resend@example.com");
 
-        // 3 resends are allowed (test cap), each returns 200
+
         for (int i = 0; i < 3; i++) {
             resendVerification("flood-resend@example.com", 200);
         }
 
-        // The 4th is blocked with 429, even though the request is otherwise valid
+
         resendVerification("flood-resend@example.com", 429);
     }
 
@@ -63,8 +59,8 @@ class EmailSendRateLimitIntegrationTest {
 
     @Test
     void emailRequestsAreLimitedPerIp() throws Exception {
-        // 10 requests from 127.0.0.1 (test cap), each to a different address so
-        // the per-email cap never triggers first
+
+
         for (int i = 0; i < 10; i++) {
             requestPasswordReset("flood-ip-" + i + "@example.com", 200);
         }
@@ -74,13 +70,12 @@ class EmailSendRateLimitIntegrationTest {
 
     @Test
     void emailSendsDoNotCountTowardLoginIpLimit() throws Exception {
-        // 5 email sends from 127.0.0.1 (under the 10-per-IP email cap)
+
         for (int i = 0; i < 5; i++) {
             requestPasswordReset("isolation-" + i + "@example.com", 200);
         }
 
-        // A login from the SAME IP still works: the login per-IP counter (cap 5)
-        // only counts purpose=LOGIN rows, so the email sends are invisible to it.
+
         registerAndActivate("isolation-login@example.com");
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

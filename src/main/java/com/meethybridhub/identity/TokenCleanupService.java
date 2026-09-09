@@ -9,13 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
-/**
- * Daily housekeeping job: purges expired one-time tokens and login attempts
- * older than 24 hours (per the V2__identity.sql comment).
- *
- * Runs daily at 3 AM by default (override with the {@code app.token-cleanup.cron}
- * property). Idempotent and safe to run on every instance of a deployment.
- */
+
 @Service
 public class TokenCleanupService {
 
@@ -37,10 +31,7 @@ public class TokenCleanupService {
         this.revokedTokenRepository = revokedTokenRepository;
     }
 
-    /**
-     * Purge expired tokens, revoked tokens past their natural expiry, and
-     * stale login attempts.
-     */
+
     @Scheduled(cron = "${app.token-cleanup.cron:0 0 3 * * *}")
     @Transactional
     public void purgeExpiredTokens() {

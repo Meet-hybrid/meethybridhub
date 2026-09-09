@@ -16,17 +16,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
-/**
- * Pure unit tests for {@link JwtService} — no Spring context.
- *
- * JwtService uses {@code @Value} field injection, so a fresh instance has
- * null/zero fields until the test injects them via {@link ReflectionTestUtils}.
- * Tokens with custom claims/expirations are built directly with the jjwt API
- * (same signing key) so expiry and version scenarios are deterministic.
- */
+
 class JwtServiceTest {
 
-    /** ≥ 32 chars, as required by the HS256 minimum key size. */
+
     private static final String SECRET = "testsecretthatsatleast32characterslong!";
     private static final String OTHER_SECRET = "anothertestsecretthatisalsolongenough123";
 
@@ -51,7 +44,7 @@ class JwtServiceTest {
         return new AppUser(user);
     }
 
-    /** Sign a token with the test secret and arbitrary claims/expiry. */
+
     private String signedToken(String subject, Instant expiration, Map<String, Object> claims) {
         return Jwts.builder()
                 .claims(claims)
@@ -62,9 +55,6 @@ class JwtServiceTest {
                 .compact();
     }
 
-    // ------------------------------------------------------------------
-    // Token generation / round-trip
-    // ------------------------------------------------------------------
 
     @Test
     void generatedAccessTokenRoundTripsSubjectAndExpiration() {
@@ -113,9 +103,6 @@ class JwtServiceTest {
                 .hasMessageContaining("at least 32 characters");
     }
 
-    // ------------------------------------------------------------------
-    // validateToken
-    // ------------------------------------------------------------------
 
     @Test
     void validateTokenAcceptsValidTokenForMatchingUser() {
@@ -157,8 +144,7 @@ class JwtServiceTest {
     void validateTokenRejectsTokenSignedWithDifferentKey() {
         JwtService service = service();
 
-        // A cleanly-signed token under a *different* secret must fail signature
-        // verification (the realistic cross-secret scenario).
+
         String wrongKeyToken = Jwts.builder()
                 .subject("alice@example.com")
                 .issuedAt(Date.from(Instant.now()))
@@ -169,9 +155,6 @@ class JwtServiceTest {
         assertThat(service.validateToken(wrongKeyToken, appUser("alice@example.com", 0))).isFalse();
     }
 
-    // ------------------------------------------------------------------
-    // passwordVersionMatches
-    // ------------------------------------------------------------------
 
     @Test
     void passwordVersionMatchesAcceptsTokenForCurrentVersion() {
@@ -187,7 +170,7 @@ class JwtServiceTest {
         AppUser user = appUser("alice@example.com", 0);
         String oldToken = service.generateAccessToken(user);
 
-        user.getUser().bumpPasswordVersion(); // password changed after issuance
+        user.getUser().bumpPasswordVersion();
 
         assertThat(service.passwordVersionMatches(oldToken, user)).isFalse();
     }
@@ -196,8 +179,7 @@ class JwtServiceTest {
     void passwordVersionMatchesRejectsTokenWithoutClaim() {
         JwtService service = service();
 
-        // A token signed correctly but without the pwdv claim (e.g. pre-feature
-        // tokens) must not be trusted.
+
         String noClaimToken = signedToken("alice@example.com",
                 Instant.now().plus(1, ChronoUnit.HOURS), Map.of());
 
@@ -214,16 +196,12 @@ class JwtServiceTest {
         assertThat(service.passwordVersionMatches(service.generateAccessToken(user), foreignPrincipal)).isTrue();
     }
 
-    // ------------------------------------------------------------------
-    // getRemainingValidityMinutes
-    // ------------------------------------------------------------------
 
     @Test
     void getRemainingValidityMinutesThrowsForExpiredToken() {
         JwtService service = service();
 
-        // jjwt rejects expired tokens at parse time, so callers of a genuinely
-        // expired token see ExpiredJwtException rather than 0.
+
         String expired = signedToken("alice@example.com",
                 Instant.now().minus(1, ChronoUnit.MINUTES), Map.of());
 
@@ -233,17 +211,16 @@ class JwtServiceTest {
 
     @Test
     void getRemainingValidityMinutesReturnsZeroWhenExpirationPassed() {
-        // The isBefore(now) guard is unreachable through the real parser (jjwt
-        // throws for expired tokens first), so cover it with a stub that
-        // reports a past expiration directly.
+
+
         JwtService service = new JwtService() {
             @Override
             public Instant extractExpiration(String token) {
                 return Instant.now().minus(1, ChronoUnit.MINUTES);
             }
         };
-        // The stub bypasses parsing, but keep the secret injected anyway so the
-        // test survives a refactor of getRemainingValidityMinutes.
+
+
         ReflectionTestUtils.setField(service, "secret", SECRET);
 
         assertThat(service.getRemainingValidityMinutes("anything")).isZero();

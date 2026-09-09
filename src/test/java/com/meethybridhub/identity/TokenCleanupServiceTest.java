@@ -14,11 +14,7 @@ import java.time.temporal.ChronoUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Verifies {@link TokenCleanupService#purgeExpiredTokens()} removes only
- * expired tokens (the scheduled trigger itself is disabled in the test profile,
- * so the method is exercised directly).
- */
+
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
@@ -66,7 +62,7 @@ class TokenCleanupServiceTest {
 
         tokenCleanupService.purgeExpiredTokens();
 
-        // Expired tokens are gone, valid ones remain
+
         assertThat(emailVerificationTokenRepository.findByToken(expiredVerification)).isEmpty();
         assertThat(emailVerificationTokenRepository.findByToken(validVerification)).isPresent();
         assertThat(passwordResetTokenRepository.findByToken(expiredReset)).isEmpty();
@@ -83,7 +79,7 @@ class TokenCleanupServiceTest {
         loginAttemptRepository.save(new LoginAttempt(
                 "recent@example.com", "127.0.0.1", "test-agent", false, "BadCredentialsException"));
 
-        // Age the old row by 25 hours (created_at is audited, so use a native update)
+
         entityManager.createNativeQuery(
                 "UPDATE login_attempts SET created_at = DATEADD('HOUR', -25, CURRENT_TIMESTAMP) "
                         + "WHERE email = 'old@example.com'")
@@ -106,7 +102,7 @@ class TokenCleanupServiceTest {
                 user.getId(), "e".repeat(64), Instant.now().minus(2, ChronoUnit.HOURS)));
 
         tokenCleanupService.purgeExpiredTokens();
-        tokenCleanupService.purgeExpiredTokens(); // second run must not fail
+        tokenCleanupService.purgeExpiredTokens();
 
         assertThat(emailVerificationTokenRepository.count()).isZero();
     }

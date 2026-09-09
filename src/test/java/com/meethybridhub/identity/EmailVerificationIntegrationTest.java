@@ -21,13 +21,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Integration tests for the email verification workflow (Hybrid's Card 2):
- *   - Registration persists a one-time verification token and emails it
- *   - GET /api/v1/auth/verify activates the user and consumes the token
- *   - Login works only AFTER verification
- *   - Invalid / expired / replayed tokens are rejected
- */
+
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -92,14 +86,14 @@ class EmailVerificationIntegrationTest {
         User user = userRepository.findByEmail(EMAIL).orElseThrow();
         String token = tokenRepository.findByUserId(user.getId()).get(0).getToken();
 
-        // Before verification login is rejected (user disabled)
+
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of(
                                 "email", EMAIL, "password", PASSWORD))))
                 .andExpect(status().isUnauthorized());
 
-        // After verification login succeeds
+
         mockMvc.perform(get("/api/v1/auth/verify").param("token", token))
                 .andExpect(status().isOk());
 
@@ -113,14 +107,14 @@ class EmailVerificationIntegrationTest {
 
     @Test
     void unverifiedUserCannotUseAuthenticatedEndpoints() throws Exception {
-        // Tokens issued at registration must NOT work until the email is verified.
+
         String accessToken = registerUser();
 
         mockMvc.perform(get("/api/v1/users/me")
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isForbidden());
 
-        // After verification the same token works.
+
         User user = userRepository.findByEmail(EMAIL).orElseThrow();
         String token = tokenRepository.findByUserId(user.getId()).get(0).getToken();
         mockMvc.perform(get("/api/v1/auth/verify").param("token", token))
@@ -139,7 +133,7 @@ class EmailVerificationIntegrationTest {
 
     @Test
     void expiredTokenIsRejected() throws Exception {
-        // Build a user + already-expired token directly (bypassing registration)
+
         User user = new User(EMAIL, passwordEncoder.encode(PASSWORD), NAME);
         user.setStatus(User.UserStatus.PENDING);
         userRepository.save(user);
@@ -162,7 +156,7 @@ class EmailVerificationIntegrationTest {
         mockMvc.perform(get("/api/v1/auth/verify").param("token", token))
                 .andExpect(status().isOk());
 
-        // Second use of the same token is rejected
+
         mockMvc.perform(get("/api/v1/auth/verify").param("token", token))
                 .andExpect(status().isBadRequest());
     }

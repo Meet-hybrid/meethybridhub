@@ -9,17 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-/**
- * User profile controller for authenticated users.
- *
- * Endpoints:
- *   GET    /api/v1/users/me                - Get current user profile
- *   PUT    /api/v1/users/me                - Update current user profile
- *   POST   /api/v1/users/me/change-password - Change password
- *   DELETE /api/v1/users/me                - Soft delete account
- *
- * All endpoints require authentication.
- */
+
 @RestController
 @RequestMapping("/api/v1/users")
 @PreAuthorize("isAuthenticated()")
@@ -31,69 +21,58 @@ public class UserController {
         this.userService = userService;
     }
 
-    /**
-     * Get current user's profile.
-     */
+
     @GetMapping("/me")
     public ResponseEntity<UserProfileResponse> getCurrentUser(
             @AuthenticationPrincipal UserDetails userDetails) {
-        
+
         User user = userService.getUserByEmail(userDetails.getUsername());
         return ResponseEntity.ok(new UserProfileResponse(user));
     }
 
-    /**
-     * Update current user's profile.
-     */
+
     @PutMapping("/me")
     public ResponseEntity<UserProfileResponse> updateProfile(
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody UpdateProfileRequest request) {
-        
+
         User user = userService.getUserByEmail(userDetails.getUsername());
         User updatedUser = userService.updateProfile(user.getId(), request.fullName());
-        
+
         return ResponseEntity.ok(new UserProfileResponse(updatedUser));
     }
 
-    /**
-     * Change current user's password.
-     */
+
     @PostMapping("/me/change-password")
     public ResponseEntity<Map<String, String>> changePassword(
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody ChangePasswordRequest request) {
-        
+
         User user = userService.getUserByEmail(userDetails.getUsername());
         userService.changePassword(
-                user.getId(), 
-                request.currentPassword(), 
+                user.getId(),
+                request.currentPassword(),
                 request.newPassword()
         );
-        
+
         return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
     }
 
-    /**
-     * Soft delete current user's account.
-     * This doesn't permanently delete data (for compliance).
-     */
+
     @DeleteMapping("/me")
     public ResponseEntity<Map<String, String>> deleteAccount(
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody DeleteAccountRequest request) {
-        
+
         User user = userService.getUserByEmail(userDetails.getUsername());
-        
-        // Verify the password (without re-hashing or touching the password
-        // version), then soft-delete the account.
+
+
         userService.verifyPassword(user.getId(), request.password());
         userService.softDelete(user.getId());
-        
+
         return ResponseEntity.ok(Map.of("message", "Account deleted successfully"));
     }
 
-    // Request/Response records
 
     public record UpdateProfileRequest(
             @jakarta.validation.constraints.NotBlank(message = "Full name is required")
@@ -104,7 +83,7 @@ public class UserController {
     public record ChangePasswordRequest(
             @jakarta.validation.constraints.NotBlank(message = "Current password is required")
             String currentPassword,
-            
+
             @com.meethybridhub.identity.validation.ValidPassword
             String newPassword
     ) {}

@@ -18,12 +18,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Integration tests for {@code DELETE /api/v1/users/me}:
- *   - the password is verified (without re-hashing) before deletion
- *   - a wrong password is rejected with 400
- *   - a deleted account's token stops working
- */
+
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -56,7 +51,7 @@ class AccountDeletionIntegrationTest {
         User deleted = userRepository.findByEmail(EMAIL).orElseThrow();
         assertThat(deleted.getStatus()).isEqualTo(User.UserStatus.DELETED);
 
-        // A soft-deleted account's token no longer authenticates
+
         mockMvc.perform(get("/api/v1/users/me")
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isForbidden());
@@ -72,14 +67,11 @@ class AccountDeletionIntegrationTest {
                         .content("{\"password\": \"WrongPassword123!\"}"))
                 .andExpect(status().isBadRequest());
 
-        // Account untouched
+
         User user = userRepository.findByEmail(EMAIL).orElseThrow();
         assertThat(user.getStatus()).isEqualTo(User.UserStatus.ACTIVE);
     }
 
-    // ------------------------------------------------------------------
-    // Helpers
-    // ------------------------------------------------------------------
 
     private String registerVerifyAndLogin() throws Exception {
         mockMvc.perform(post("/api/v1/auth/register")

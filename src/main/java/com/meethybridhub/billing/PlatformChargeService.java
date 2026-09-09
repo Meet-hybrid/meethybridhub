@@ -17,19 +17,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/**
- * Dormant platform-charge module (see docs/platform-charge-dormant-module.md).
- *
- * Charges a flat fee per transaction behind the scenes. It ships ASLEEP:
- * {@code platform-charge.enabled} defaults to {@code false}, in which case
- * {@link #charge} and {@link #sweep} are no-ops and nothing is persisted.
- * Wake it up with {@code PLATFORM_CHARGE_ENABLED=true} + a flat fee in the
- * environment; from then on inline {@code charge()} calls and the nightly
- * sweep start recording automatically.
- *
- * Idempotency: the {@code transaction_ref} column is unique, so a transaction
- * can never be charged twice regardless of retries or duplicate sweeps.
- */
+
 @Service
 public class PlatformChargeService {
 
@@ -56,17 +44,12 @@ public class PlatformChargeService {
         this.auditLogService = auditLogService;
     }
 
-    /** Whether the module is awake (the sleep switch). */
+
     public boolean isEnabled() {
         return enabled;
     }
 
-    /**
-     * Record the flat fee on a single transaction.
-     *
-     * @return the persisted charge, or empty when the module is dormant or the
-     *         transaction has already been charged
-     */
+
     public Optional<PlatformCharge> charge(String transactionRef, BigDecimal amount) {
         if (!enabled) {
             log.info("Platform charge dormant (enabled=false); skipping transaction {}", transactionRef);
@@ -82,8 +65,8 @@ public class PlatformChargeService {
         try {
             saved = platformChargeRepository.save(charge);
         } catch (DataIntegrityViolationException e) {
-            // Lost the exists-then-save race: another request charged this ref
-            // first. The unique transaction_ref is the real idempotency guard.
+
+
             log.info("Transaction {} was charged concurrently; skipping", transactionRef);
             return Optional.empty();
         }
@@ -94,18 +77,7 @@ public class PlatformChargeService {
         return Optional.of(saved);
     }
 
-    /**
-     * Nightly sweep: find settled transactions from every registered
-     * {@link ChargeableTransactionSource}, skip refs already charged, and
-     * charge the rest. No-op while dormant or with no sources registered
-     * (the state of the codebase today).
-     *
-     * CAVEAT: the whole sweep runs in ONE transaction. If a single charge
-     * fails, the entire batch rolls back — and a failed audit insert inside
-     * the shared transaction marks it rollback-only (see AuditLogService).
-     * Acceptable for a nightly job whose batch is pre-filtered; revisit
-     * per-transaction isolation if a batch ever fails in practice.
-     */
+
     @Scheduled(cron = "${platform-charge.sweep-cron:0 0 3 * * *}")
     @Transactional
     public void sweep() {
@@ -136,9 +108,8 @@ public class PlatformChargeService {
                 if (alreadyCharged.contains(transaction.transactionRef())) {
                     continue;
                 }
-                // charge() re-checks existsByTransactionRef as its own guard —
-                // deliberate, so it stays idempotent when the future Orders
-                // module calls it inline. One extra query per ref is the cost.
+
+
                 charge(transaction.transactionRef(), transaction.amount());
             }
         }

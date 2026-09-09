@@ -12,11 +12,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
-/**
- * Unit tests for the audit trail writer: entries are persisted with the actor,
- * event, description, IP and User-Agent; a repository failure must never
- * propagate to the caller (best-effort logging).
- */
+
 @ExtendWith(MockitoExtension.class)
 class AuditLogServiceTest {
 

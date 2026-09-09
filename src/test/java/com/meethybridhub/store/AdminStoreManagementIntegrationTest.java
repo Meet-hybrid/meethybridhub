@@ -25,12 +25,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Integration tests for admin store management (remaining Card 3 scope):
- *   - ADMIN can list stores (all or by status) and change store status
- *   - Status changes are recorded in the audit trail
- *   - Non-admins are denied (403), unknown stores 404, invalid status 400
- */
+
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -63,19 +58,19 @@ class AdminStoreManagementIntegrationTest {
         String ownerToken = registerAndGetToken("store-owner@example.com", "Store Owner");
         long storeId = createStore(ownerToken, "Admin Managed Shop");
 
-        // List all stores
+
         mockMvc.perform(get("/api/v1/admin/stores")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.name == 'Admin Managed Shop')]").exists());
 
-        // Filter by status
+
         mockMvc.perform(get("/api/v1/admin/stores").param("status", "ACTIVE")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.id == " + storeId + ")]").exists());
 
-        // Update status
+
         mockMvc.perform(put("/api/v1/admin/stores/{id}/status", storeId)
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -83,7 +78,7 @@ class AdminStoreManagementIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("SUSPENDED"));
 
-        // Store creation itself is audited
+
         boolean createdAudited = auditLogRepository.findAll().stream()
                 .anyMatch(r -> r.getEventType() == AuditEventType.STORE_CREATED
                         && r.getDescription().contains("admin-managed-shop"));
@@ -92,7 +87,7 @@ class AdminStoreManagementIntegrationTest {
         Store store = storeRepository.findById(storeId).orElseThrow();
         assertThat(store.getStatus()).isEqualTo(StoreStatus.SUSPENDED);
 
-        // The change is attributable in the audit trail (description uses the slug)
+
         boolean audited = auditLogRepository.findAll().stream()
                 .anyMatch(r -> r.getEventType() == AuditEventType.STORE_STATUS_UPDATED
                         && r.getDescription().contains("admin-managed-shop")
@@ -149,9 +144,6 @@ class AdminStoreManagementIntegrationTest {
                 .andExpect(status().isBadRequest());
     }
 
-    // ------------------------------------------------------------------
-    // Helpers
-    // ------------------------------------------------------------------
 
     private String registerAndGetToken(String email, String fullName) throws Exception {
         String body = mockMvc.perform(post("/api/v1/auth/register")
@@ -170,8 +162,7 @@ class AdminStoreManagementIntegrationTest {
     private String registerAndPromoteToAdmin(String email, String fullName) throws Exception {
         String token = registerAndGetToken(email, fullName);
 
-        // Promote to ADMIN in the database; the JWT filter re-loads authorities
-        // from the DB on every request, so the next call already has ADMIN.
+
         User user = userRepository.findByEmail(email).orElseThrow();
         user.addRole("ADMIN");
         userRepository.save(user);

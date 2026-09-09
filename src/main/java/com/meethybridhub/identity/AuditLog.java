@@ -6,20 +6,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 
-/**
- * One entry in the immutable security audit trail ({@code audit_log} table,
- * V2__identity.sql).
- *
- * Append-only by convention: nothing in the codebase updates or deletes these
- * rows. The {@code user_id} is nullable so unauthenticated events (failed
- * logins) and events for users deleted later keep their trail.
- *
- * NOTE: the table's {@code metadata JSONB} column is deliberately NOT mapped —
- * H2 (tests build the schema from entities) cannot create JSONB from JPA, and
- * Hibernate's {@code validate} ignores unmapped columns. Revisit with a JSON
- * column type / Testcontainers when the first feature needs structured
- * payloads.
- */
+
 @Entity
 @Table(name = "audit_log")
 @EntityListeners(AuditingEntityListener.class)
@@ -29,7 +16,7 @@ public class AuditLog {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** Platform user who triggered the event; null for unauthenticated events. */
+
     @Column(name = "user_id")
     private Long userId;
 
@@ -40,7 +27,7 @@ public class AuditLog {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
-    /** Stored as VARCHAR(45) (IPv6 max length) — see V7 migration. */
+
     @Column(name = "ip_address", length = 45)
     private String ipAddress;
 

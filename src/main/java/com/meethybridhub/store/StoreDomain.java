@@ -7,14 +7,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 
-/**
- * A domain (or subdomain) mapped to a store — e.g. {@code divine-signature.meethybridhub.com}.
- *
- * This is the reference implementation of the {@link TenantEntity} pattern:
- * it carries a {@code store_id} column (via the mapped superclass) and is
- * queried exclusively through tenant-scoped repository methods so that one
- * store can never read another store's data.
- */
+
 @Entity
 @Table(name = "store_domains")
 @EntityListeners(AuditingEntityListener.class)

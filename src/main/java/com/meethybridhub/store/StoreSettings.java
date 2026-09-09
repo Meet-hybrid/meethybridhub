@@ -7,16 +7,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 
-/**
- * Storefront branding and settings for a store (1:1 — see V9__store_settings.sql).
- *
- * Store-scoped via {@link TenantEntity}: carries a {@code store_id} column and
- * is only reachable through the owner's own tenant context, so one store can
- * never read or change another store's branding.
- *
- * A settings row is created lazily on first access with sensible defaults, so
- * a freshly created store always has valid branding to render.
- */
+
 @Entity
 @Table(name = "store_settings",
         uniqueConstraints = @UniqueConstraint(name = "uq_store_settings_store", columnNames = "store_id"))

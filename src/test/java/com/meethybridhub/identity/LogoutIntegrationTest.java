@@ -19,13 +19,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Integration tests for server-side logout (V10 revoked_tokens denylist):
- *   - POST /auth/logout revokes the refresh token
- *   - /refresh rejects a revoked token but still works for valid ones
- *   - Logout is idempotent and never leaks whether a token was valid
- *   - The logout event is recorded in the audit trail
- */
+
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -57,13 +51,13 @@ class LogoutIntegrationTest {
         String email = "logout-a@example.com";
         String refreshToken = registerAndLogin(email);
 
-        // Sanity: refresh works before logout
+
         mockMvc.perform(post("/api/v1/auth/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"refreshToken\": \"" + refreshToken + "\"}"))
                 .andExpect(status().isOk());
 
-        // Logout revokes the refresh token
+
         mockMvc.perform(post("/api/v1/auth/logout")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"refreshToken\": \"" + refreshToken + "\"}"))
@@ -72,7 +66,7 @@ class LogoutIntegrationTest {
 
         assertThat(revokedTokenRepository.count()).isEqualTo(1);
 
-        // Refresh with the revoked token now fails
+
         mockMvc.perform(post("/api/v1/auth/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"refreshToken\": \"" + refreshToken + "\"}"))
@@ -83,7 +77,7 @@ class LogoutIntegrationTest {
     void logoutIsIdempotentAndDoesNotLeakTokenValidity() throws Exception {
         String refreshToken = registerAndLogin("logout-b@example.com");
 
-        // Logout twice with the same token -> 200 both times, exactly one row
+
         mockMvc.perform(post("/api/v1/auth/logout")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"refreshToken\": \"" + refreshToken + "\"}"))
@@ -94,7 +88,7 @@ class LogoutIntegrationTest {
                 .andExpect(status().isOk());
         assertThat(revokedTokenRepository.count()).isEqualTo(1);
 
-        // Garbage / unknown tokens also get a friendly 200 (no information leak)
+
         mockMvc.perform(post("/api/v1/auth/logout")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"refreshToken\": \"not.a.real.token\"}"))
@@ -128,8 +122,7 @@ class LogoutIntegrationTest {
         String refreshToken = registerAndLogin(email);
         String accessToken = loginAndGetAccessToken(email);
 
-        // Logout revokes the refresh token only; the short-lived access token
-        // keeps working until it expires naturally.
+
         mockMvc.perform(post("/api/v1/auth/logout")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"refreshToken\": \"" + refreshToken + "\"}"))
@@ -145,11 +138,7 @@ class LogoutIntegrationTest {
                 .andExpect(status().isOk());
     }
 
-    // ------------------------------------------------------------------
-    // Helpers
-    // ------------------------------------------------------------------
 
-    /** Register (auto-verifies email) and return the refresh token. */
     private String registerAndLogin(String email) throws Exception {
         registerAndVerify(email);
         return loginAndGet(email, "refreshToken");
@@ -168,8 +157,7 @@ class LogoutIntegrationTest {
                                 "fullName", "Logout User"))))
                 .andExpect(status().isCreated());
 
-        // New users are unverified; the JWT filter rejects unverified accounts,
-        // so consume the generated verification token first.
+
         User user = userRepository.findByEmail(email).orElseThrow();
         String verifyToken = verificationTokenRepository.findByUserId(user.getId()).get(0).getToken();
         mockMvc.perform(get("/api/v1/auth/verify").param("token", verifyToken))

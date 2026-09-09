@@ -11,17 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * Admin store management (the remaining Card 3 scope).
- *
- *   GET /api/v1/admin/stores             - list stores (filter by status)
- *   PUT /api/v1/admin/stores/{id}/status - set a store's lifecycle status
- *
- * Protected twice: the URL rule ({@code hasRole('ADMIN')} in SecurityConfig)
- * and the class-level {@code @PreAuthorize} below (defense in depth). Stores
- * are platform-level entities (they ARE the tenants), so no tenant context is
- * involved here.
- */
+
 @RestController
 @RequestMapping("/api/v1/admin/stores")
 @PreAuthorize("hasRole('ADMIN')")

@@ -15,17 +15,7 @@ import java.util.Map;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/**
- * Integration tests for authentication endpoints.
- *
- * Tests the complete authentication flow:
- *   - User registration
- *   - User login
- *   - Token refresh
- *   - Input validation
- *
- * Uses the test profile with H2 in-memory database.
- */
+
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -77,7 +67,7 @@ class AuthIntegrationTest {
     void registerWithWeakPasswordFails() throws Exception {
         Map<String, String> request = Map.of(
                 "email", TEST_EMAIL,
-                "password", "weak",  // Too short, no uppercase, no special char
+                "password", "weak",
                 "fullName", TEST_NAME
         );
 
@@ -89,7 +79,7 @@ class AuthIntegrationTest {
 
     @Test
     void loginWithValidCredentialsAfterRegistrationFailsWithoutVerification() throws Exception {
-        // First register
+
         Map<String, String> registerRequest = Map.of(
                 "email", TEST_EMAIL,
                 "password", TEST_PASSWORD,
@@ -100,7 +90,7 @@ class AuthIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registerRequest)));
 
-        // Then login - should fail because email is not verified
+
         Map<String, String> loginRequest = Map.of(
                 "email", TEST_EMAIL,
                 "password", TEST_PASSWORD
@@ -127,7 +117,7 @@ class AuthIntegrationTest {
 
     @Test
     void refreshTokenWithValidToken() throws Exception {
-        // Register and get tokens
+
         Map<String, String> registerRequest = Map.of(
                 "email", TEST_EMAIL,
                 "password", TEST_PASSWORD,
@@ -141,12 +131,12 @@ class AuthIntegrationTest {
                 .getResponse()
                 .getContentAsString();
 
-        // Extract refresh token from response
+
         String refreshToken = objectMapper.readTree(registerResponse)
                 .get("refreshToken")
                 .asText();
 
-        // Refresh token
+
         Map<String, String> refreshRequest = Map.of(
                 "refreshToken", refreshToken
         );
