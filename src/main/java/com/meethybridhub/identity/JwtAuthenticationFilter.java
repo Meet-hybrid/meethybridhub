@@ -59,6 +59,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             final String jwt = authHeader.substring(BEARER_PREFIX.length());
             final String userEmail = jwtService.extractUsername(jwt);
 
+            if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
@@ -77,6 +78,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             null,
                             userDetails.getAuthorities()
                     );
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
 
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

@@ -87,6 +87,7 @@ public class JwtService {
     }
 
 
+    public boolean passwordVersionMatches(String token, UserDetails userDetails) {        if (userDetails instanceof AppUser appUser) {
     public boolean passwordVersionMatches(String token, UserDetails userDetails) {
         if (userDetails instanceof AppUser appUser) {
             Integer tokenVersion = extractClaim(token,
@@ -136,6 +137,7 @@ public class JwtService {
                 .compact();
     }
 
+    private SecretKey getSigningKey() {
 
     private SecretKey getSigningKey() {
 

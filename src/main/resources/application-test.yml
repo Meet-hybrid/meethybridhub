@@ -1,45 +1,34 @@
-# ============================================================================
-# Test profile: an in-memory H2 database in PostgreSQL-compatibility mode.
-# Tests must never touch a developer's real database.
-#
-# LIMITATION (important): H2 emulates a subset of Postgres. When we reach
-# Postgres-only features (JSONB, partial indexes, enums), slice tests move to
-# Testcontainers so tests run against REAL Postgres in CI.
-# ============================================================================
-
+# Test profile overrides — use H2, skip Flyway and Redis
 spring:
   datasource:
-    url: jdbc:h2:mem:meethybridhub;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
-    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
     username: sa
-    password: ""
-
-  jpa:
-    hibernate:
-      # No Flyway migrations exist yet, so let Hibernate build the (empty) schema.
-      ddl-auto: create-drop
-
+    password:
+    driver-class-name: org.h2.Driver
   flyway:
     enabled: false
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  data:
+    redis:
+      enabled: false
 
-# Never fire scheduled jobs during tests (they could mutate shared in-memory data).
-app:
-  scheduling:
-    enabled: false
+resilience4j:
+  circuitbreaker:
+    instances: {}
+  ratelimiter:
+    instances: {}
+  retry:
+    instances: {}
 
-# Low thresholds so lockout/rate-limit behavior is easy to exercise.
+# Test thresholds: 3 failed attempts per email, 5 per IP
 auth:
   rate-limit:
     max-failed-attempts: 3
     max-attempts-per-ip: 5
     window-minutes: 15
-    # X-Forwarded-For is ignored by default (spoofing protection); one test
-    # class opts in via @TestPropertySource to prove the opt-in path works.
     trust-forwarded-header: false
-
-  # Low email caps so flooding behavior is easy to exercise. Per-IP (10) is
-  # deliberately higher than per-email (3) so the per-email tests (4 requests
-  # from 127.0.0.1) don't trip the IP limit first.
   email-limit:
     max-per-email: 3
     max-per-ip: 10

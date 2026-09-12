@@ -22,6 +22,7 @@ public class StoreFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(StoreFilter.class);
     private static final String STORE_HEADER = "X-Store-Id";
+    private static final String STORE_SLUG_HEADER = "X-Store-Slug";
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final StoreRepository storeRepository;
@@ -68,6 +69,7 @@ public class StoreFilter extends OncePerRequestFilter {
 
     private void resolveTenant(HttpServletRequest request) {
         resolveFromHeader(request)
+                .or(() -> resolveFromSlugHeader(request))
                 .or(() -> resolveFromSubdomain(request))
                 .or(() -> resolveFromJwt(request))
                 .ifPresent(storeId -> {
@@ -92,6 +94,15 @@ public class StoreFilter extends OncePerRequestFilter {
             log.debug("Invalid X-Store-Id header value: {}", header);
         }
         return Optional.empty();
+    }
+
+
+    private Optional<Long> resolveFromSlugHeader(HttpServletRequest request) {
+        String slug = request.getHeader(STORE_SLUG_HEADER);
+        if (slug == null || slug.isBlank()) return Optional.empty();
+        return storeRepository.findBySlug(slug.trim().toLowerCase(Locale.ROOT))
+                .filter(store -> store.getStatus() == StoreStatus.ACTIVE)
+                .map(Store::getId);
     }
 
 
@@ -126,6 +137,10 @@ public class StoreFilter extends OncePerRequestFilter {
             return Optional.empty();
         }
         host = host.split(":")[0].toLowerCase(Locale.ROOT);
+        if (host.equals(baseDomain)) {
+            return Optional.empty();
+        }
+        if (host.endsWith("." + baseDomain)) {
         if (host.equals(baseDomain) || host.endsWith("." + baseDomain)) {
             String subdomain = host.substring(0, host.length() - baseDomain.length() - 1);
             if (!subdomain.isEmpty() && !subdomain.contains(".")) {

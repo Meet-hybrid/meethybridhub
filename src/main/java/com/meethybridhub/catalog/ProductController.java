@@ -124,7 +124,7 @@ public class ProductController {
 
     public record ProductResponse(Long id, Long storeId, String name, String description,
                                   BigDecimal price, Long categoryId, boolean active) {
-        static ProductResponse from(Product product) {
+        public static ProductResponse from(Product product) {
             return new ProductResponse(product.getId(), product.getStoreId(), product.getName(), product.getDescription(),
                     product.getPrice(), product.getCategory() == null ? null : product.getCategory().getId(), product.isActive());
         }

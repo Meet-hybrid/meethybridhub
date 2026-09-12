@@ -58,12 +58,15 @@ public class UserService {
         this.auditLogService = auditLogService;
     }
 
+    public User register(AuthController.RegisterRequest request) {
 
     public User register(AuthController.RegisterRequest request) {
 
         if (userRepository.existsByEmailIgnoreCase(request.email())) {
             throw new IllegalArgumentException("Email already registered: " + request.email());
         }
+
+        validatePassword(request.password());
 
 
         validatePassword(request.password());
@@ -74,6 +77,11 @@ public class UserService {
                 passwordEncoder.encode(request.password()),
                 request.fullName().trim()
         );
+
+        user.setRoles("CUSTOMER");
+        user.setStatus(User.UserStatus.PENDING);
+
+        User savedUser = userRepository.save(user);
 
 
         user.setRoles("CUSTOMER");
@@ -299,6 +307,9 @@ public class UserService {
         }
     }
 
+    public void changePassword(Long userId, String currentPassword, String newPassword) {
+        User user = getUserById(userId);
+
 
     public void changePassword(Long userId, String currentPassword, String newPassword) {
         User user = getUserById(userId);
@@ -307,6 +318,8 @@ public class UserService {
         if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
             throw new IllegalArgumentException("Current password is incorrect");
         }
+
+        validatePassword(newPassword);
 
 
         validatePassword(newPassword);
@@ -374,6 +387,9 @@ public class UserService {
         if (password.equals(password.toLowerCase()) ||
             password.equals(password.toUpperCase())) {
             throw new IllegalArgumentException("Password must contain both uppercase and lowercase letters");
+        }
+        if (!password.matches(".*\\d.*")) {
+            throw new IllegalArgumentException("Password must contain at least one digit");
         }
 
 
