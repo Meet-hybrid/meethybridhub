@@ -22,6 +22,26 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     List<User> findByStatus(User.UserStatus status);
 
+
+@Repository
+public interface UserRepository extends JpaRepository<User, Long> {
+
+
+    Optional<User> findByEmail(String email);
+
+
+    Optional<User> findByEmailIgnoreCase(String email);
+
+
+    boolean existsByEmail(String email);
+
+
+    boolean existsByEmailIgnoreCase(String email);
+
+
+    List<User> findByStatus(User.UserStatus status);
+
+
     List<User> findByCreatedAtAfter(Instant date);
 
 
@@ -33,6 +53,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT u FROM User u WHERE u.lastLoginAt < :date OR u.lastLoginAt IS NULL")
     List<User> findInactiveUsersSince(@Param("date") Instant date);
+
+
+    @Query("SELECT u FROM User u WHERE u.status = 'ACTIVE' AND u.emailVerified = true")
+    List<User> findActiveUsers();
+
+
+    @Query("SELECT u FROM User u WHERE u.lastLoginAt < :date OR u.lastLoginAt IS NULL")
+    List<User> findInactiveUsersSince(@Param("date") Instant date);
+
 
     @org.springframework.data.jpa.repository.Modifying
     @Query("UPDATE User u SET u.lastLoginAt = :timestamp WHERE u.id = :userId")

@@ -40,12 +40,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
+
+
         if (isPublicEndpoint(request)) {
             filterChain.doFilter(request, response);
             return;
         }
 
         final String authHeader = request.getHeader(AUTHORIZATION_HEADER);
+
 
         if (authHeader == null || !authHeader.startsWith(BEARER_PREFIX)) {
             filterChain.doFilter(request, response);
@@ -57,6 +60,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             final String userEmail = jwtService.extractUsername(jwt);
 
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+
+            if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+
+
                 UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
 
 
@@ -64,12 +71,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         && jwtService.passwordVersionMatches(jwt, userDetails)
                         && userDetails.isEnabled()
                         && userDetails.isAccountNonLocked()) {
+
+
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails,
                             null,
                             userDetails.getAuthorities()
                     );
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+
                     SecurityContextHolder.getContext().setAuthentication(authToken);
 
                     log.debug("Authenticated user: {}", userEmail);
@@ -81,6 +95,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             log.error("JWT authentication error for request {}: {}",
                      request.getRequestURI(), e.getMessage(), e);
+
+
             SecurityContextHolder.clearContext();
         }
 
@@ -90,6 +106,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private boolean isPublicEndpoint(HttpServletRequest request) {
         String path = request.getServletPath();
+
 
         return path.startsWith("/actuator/health") ||
                path.startsWith("/v3/api-docs") ||
@@ -103,10 +120,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                path.equals("/api/v1/auth/resend-verification");
     }
 
+
     @Override
     protected boolean shouldNotFilterErrorDispatch() {
         return true;
     }
+
 
     @Override
     protected boolean shouldNotFilterAsyncDispatch() {

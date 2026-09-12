@@ -34,22 +34,27 @@ public class JwtService {
     @Value("${jwt.refresh-token.expiration-days:30}")
     private int refreshTokenExpirationDays;
 
+
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
+
     public Instant extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration).toInstant();
     }
+
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
 
+
     public String generateAccessToken(UserDetails userDetails) {
         return generateAccessToken(userDetails, Map.of());
     }
+
 
     public String generateAccessToken(UserDetails userDetails, Map<String, Object> extraClaims) {
         Map<String, Object> claims = baseClaims(userDetails);
@@ -58,9 +63,11 @@ public class JwtService {
                 accessTokenExpirationHours, ChronoUnit.HOURS);
     }
 
+
     public String generateRefreshToken(UserDetails userDetails) {
         return generateRefreshToken(userDetails, Map.of());
     }
+
 
     public String generateRefreshToken(UserDetails userDetails, Map<String, Object> extraClaims) {
         Map<String, Object> claims = baseClaims(userDetails);
@@ -81,6 +88,8 @@ public class JwtService {
 
 
     public boolean passwordVersionMatches(String token, UserDetails userDetails) {        if (userDetails instanceof AppUser appUser) {
+    public boolean passwordVersionMatches(String token, UserDetails userDetails) {
+        if (userDetails instanceof AppUser appUser) {
             Integer tokenVersion = extractClaim(token,
                     claims -> claims.get(CLAIM_PASSWORD_VERSION, Integer.class));
             return tokenVersion != null && tokenVersion.equals(appUser.getPasswordVersion());
@@ -88,18 +97,22 @@ public class JwtService {
         return true;
     }
 
+
     public boolean validateToken(String token, UserDetails userDetails) {
         try {
             final String username = extractUsername(token);
             return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
         } catch (Exception e) {
+
             return false;
         }
     }
 
+
     private boolean isTokenExpired(String token) {
         return extractExpiration(token).isBefore(Instant.now());
     }
+
 
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
@@ -108,6 +121,7 @@ public class JwtService {
                 .parseSignedClaims(token)
                 .getPayload();
     }
+
 
     private String buildToken(Map<String, Object> claims, String subject,
                                long amount, ChronoUnit unit) {
@@ -124,12 +138,16 @@ public class JwtService {
     }
 
     private SecretKey getSigningKey() {
+
+    private SecretKey getSigningKey() {
+
         if (secret.length() < 32) {
             throw new IllegalStateException(
                     "JWT secret must be at least 32 characters long. Current length: " + secret.length());
         }
         return Keys.hmacShaKeyFor(secret.getBytes());
     }
+
 
     public long getRemainingValidityMinutes(String token) {
         Instant expiration = extractExpiration(token);

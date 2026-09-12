@@ -59,11 +59,18 @@ public class UserService {
     }
 
     public User register(AuthController.RegisterRequest request) {
+
+    public User register(AuthController.RegisterRequest request) {
+
         if (userRepository.existsByEmailIgnoreCase(request.email())) {
             throw new IllegalArgumentException("Email already registered: " + request.email());
         }
 
         validatePassword(request.password());
+
+
+        validatePassword(request.password());
+
 
         User user = new User(
                 request.email().toLowerCase().trim(),
@@ -75,6 +82,14 @@ public class UserService {
         user.setStatus(User.UserStatus.PENDING);
 
         User savedUser = userRepository.save(user);
+
+
+        user.setRoles("CUSTOMER");
+        user.setStatus(User.UserStatus.PENDING);
+
+
+        User savedUser = userRepository.save(user);
+
 
         EmailVerificationToken verificationToken = new EmailVerificationToken(
                 savedUser.getId(),
@@ -134,6 +149,7 @@ public class UserService {
         Optional<User> userOptional = userRepository.findByEmail(email);
 
         if (userOptional.isEmpty()) {
+
             log.debug("Verification resend requested for non-existent email: {}", email);
             return;
         }
@@ -169,11 +185,13 @@ public class UserService {
         Optional<User> userOptional = userRepository.findByEmail(email);
 
         if (userOptional.isEmpty()) {
+
             log.debug("Password reset requested for non-existent email: {}", email);
             return;
         }
 
         User user = userOptional.get();
+
 
         passwordResetTokenRepository.deleteByUserIdAndUsedAtIsNull(user.getId());
 
@@ -230,6 +248,7 @@ public class UserService {
         log.info("Password reset confirmed for user: {}", user.getEmail());
     }
 
+
     public void recordLogin(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
@@ -239,6 +258,7 @@ public class UserService {
 
         log.debug("Login recorded for user: {}", email);
     }
+
 
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         return userDetailsService.loadUserByUsername(email);
@@ -260,15 +280,18 @@ public class UserService {
         return userRepository.findAll();
     }
 
+
     public User getUserById(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
     }
 
+
     public User getUserByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with email: " + email));
     }
+
 
     public User updateProfile(Long userId, String fullName) {
         User user = getUserById(userId);
@@ -287,11 +310,20 @@ public class UserService {
     public void changePassword(Long userId, String currentPassword, String newPassword) {
         User user = getUserById(userId);
 
+
+    public void changePassword(Long userId, String currentPassword, String newPassword) {
+        User user = getUserById(userId);
+
+
         if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
             throw new IllegalArgumentException("Current password is incorrect");
         }
 
         validatePassword(newPassword);
+
+
+        validatePassword(newPassword);
+
 
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         user.bumpPasswordVersion();
@@ -345,10 +377,13 @@ public class UserService {
         log.info("User soft deleted: ID {}", userId);
     }
 
+
     private void validatePassword(String password) {
         if (password == null || password.length() < 8) {
             throw new IllegalArgumentException("Password must be at least 8 characters long");
         }
+
+
         if (password.equals(password.toLowerCase()) ||
             password.equals(password.toUpperCase())) {
             throw new IllegalArgumentException("Password must contain both uppercase and lowercase letters");
@@ -356,6 +391,13 @@ public class UserService {
         if (!password.matches(".*\\d.*")) {
             throw new IllegalArgumentException("Password must contain at least one digit");
         }
+
+
+        if (!password.matches(".*\\d.*")) {
+            throw new IllegalArgumentException("Password must contain at least one digit");
+        }
+
+
         if (!password.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?].*")) {
             throw new IllegalArgumentException("Password must contain at least one special character");
         }

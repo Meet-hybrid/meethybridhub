@@ -141,6 +141,7 @@ public class StoreFilter extends OncePerRequestFilter {
             return Optional.empty();
         }
         if (host.endsWith("." + baseDomain)) {
+        if (host.equals(baseDomain) || host.endsWith("." + baseDomain)) {
             String subdomain = host.substring(0, host.length() - baseDomain.length() - 1);
             if (!subdomain.isEmpty() && !subdomain.contains(".")) {
                 return Optional.of(subdomain);
