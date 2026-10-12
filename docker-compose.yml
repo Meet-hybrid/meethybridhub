@@ -1,0 +1,61 @@
+# Full backend stack: PostgreSQL + Redis + the Spring Boot app.
+#
+#   JWT_SECRET=... PAYMENT_WEBHOOK_SECRET=... docker-compose up --build
+#
+# APP_ENV=local by default so the app boots with dev secrets. For a staging
+# deploy set APP_ENV=prod and provide real JWT_SECRET / PAYMENT_WEBHOOK_SECRET
+# / DB_PASSWORD values — StartupSecretsValidator refuses to boot otherwise.
+version: "2.4"
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-meethybridhub}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "${DB_PORT:-5433}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-meethybridhub}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-meethybridhub}
+      DB_USERNAME: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      APP_ENV: ${APP_ENV:-local}
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:8080}
+      # Local/dev default only; override for staging (APP_ENV=prod enforces this).
+      JWT_SECRET: ${JWT_SECRET:-local-compose-jwt-secret-32-bytes-minimum!}
+      PAYMENT_WEBHOOK_SECRET: ${PAYMENT_WEBHOOK_SECRET:-local-compose-webhook-secret}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+
+volumes:
+  db-data:
