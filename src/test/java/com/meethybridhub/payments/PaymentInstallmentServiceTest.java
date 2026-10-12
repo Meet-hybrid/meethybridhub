@@ -113,6 +113,7 @@ class PaymentInstallmentServiceTest {
     @Test
     void applyWebhookHandlesRefundedStatus() {
         Payment payment = payment();
+        payment.setStatus(PaymentStatus.PAID);
         when(payments.findByStoreIdAndTransactionId(7L, "TXN-1")).thenReturn(Optional.of(payment));
         when(payments.save(any(Payment.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -120,6 +121,57 @@ class PaymentInstallmentServiceTest {
                 .applyWebhook(7L, "TXN-1", "refunded", new BigDecimal("20.00"), "{}");
 
         assertThat(result.getStatus()).isEqualTo(PaymentStatus.REFUNDED);
+    }
+
+    @Test
+    void applyWebhookIgnoresSameStatusReplay() {
+        Payment payment = payment();
+        payment.setStatus(PaymentStatus.PAID);
+        when(payments.findByStoreIdAndTransactionId(7L, "TXN-1")).thenReturn(Optional.of(payment));
+
+        Payment result = new PaymentService(payments, ordersService, orders)
+                .applyWebhook(7L, "TXN-1", "success", new BigDecimal("20.00"), "{}");
+
+        assertThat(result.getStatus()).isEqualTo(PaymentStatus.PAID);
+        verify(payments, never()).save(any(Payment.class));
+    }
+
+    @Test
+    void applyWebhookRejectsPaidToFailedTransition() {
+        Payment payment = payment();
+        payment.setStatus(PaymentStatus.PAID);
+        when(payments.findByStoreIdAndTransactionId(7L, "TXN-1")).thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> new PaymentService(payments, ordersService, orders)
+                .applyWebhook(7L, "TXN-1", "failed", new BigDecimal("20.00"), "{}"))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("PAID");
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.PAID);
+    }
+
+    @Test
+    void applyWebhookRejectsRefundOfUnpaidPayment() {
+        Payment payment = payment();
+        when(payments.findByStoreIdAndTransactionId(7L, "TXN-1")).thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> new PaymentService(payments, ordersService, orders)
+                .applyWebhook(7L, "TXN-1", "refunded", new BigDecimal("20.00"), "{}"))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("not PAID");
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.PENDING);
+    }
+
+    @Test
+    void applyWebhookRejectsTransitionAfterRefund() {
+        Payment payment = payment();
+        payment.setStatus(PaymentStatus.REFUNDED);
+        when(payments.findByStoreIdAndTransactionId(7L, "TXN-1")).thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> new PaymentService(payments, ordersService, orders)
+                .applyWebhook(7L, "TXN-1", "success", new BigDecimal("20.00"), "{}"))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("refunded");
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.REFUNDED);
     }
 
     @Test

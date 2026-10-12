@@ -70,6 +70,23 @@ public class PaymentService {
             default -> throw new BadRequestException("Unsupported payment webhook status: " + status);
         };
 
+        // Terminal-state guard: webhooks can be replayed or arrive out of order.
+        if (payment.getStatus() == next) {
+            // Same-status replay (e.g. duplicate success) is a no-op: no re-save, no order churn.
+            return payment;
+        }
+        if (payment.getStatus() == PaymentStatus.PAID && next == PaymentStatus.FAILED) {
+            throw new BadRequestException("Cannot move settled payment from PAID to FAILED");
+        }
+        if (payment.getStatus() == PaymentStatus.REFUNDED) {
+            throw new BadRequestException("Payment is already refunded; no further status changes are allowed");
+        }
+        if (next == PaymentStatus.REFUNDED) {
+            if (payment.getStatus() != PaymentStatus.PAID) {
+                throw new BadRequestException("Cannot refund a payment that is not PAID");
+            }
+        }
+
         payment.setStatus(next);
         payment.setGatewayResponse(rawPayload);
         if (next == PaymentStatus.PAID) {
