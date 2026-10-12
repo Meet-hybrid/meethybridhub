@@ -132,6 +132,10 @@ payment:
 # Public base URL used to build verification links in emails.
 app:
   base-url: ${APP_BASE_URL:http://localhost:8080}
+  # Deployment environment. Set APP_ENV=prod in production: this activates
+  # StartupSecretsValidator, which refuses to boot with missing or default-valued
+  # secrets (JWT_SECRET, PAYMENT_WEBHOOK_SECRET, DB_PASSWORD).
+  environment: ${APP_ENV:local}
 
 # Login rate limiting / account lockout (see LoginAttemptService).
 # The login_attempts table (V2) feeds these windowed counters.
