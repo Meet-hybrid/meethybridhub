@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.meethybridhub.common.exception.BadRequestException;
 import com.meethybridhub.common.exception.UnauthorizedException;
+import com.meethybridhub.identity.AuditEventType;
+import com.meethybridhub.identity.AuditLogService;
 import com.meethybridhub.identity.User;
 import com.meethybridhub.identity.UserService;
 import com.meethybridhub.store.TenantContext;
@@ -28,13 +30,16 @@ public class PaymentController {
 
     private final PaymentService paymentService;
     private final UserService userService;
+    private final AuditLogService auditLogService;
     private final ObjectMapper objectMapper;
     private final String webhookSecret;
 
-    public PaymentController(PaymentService paymentService, UserService userService, ObjectMapper objectMapper,
+    public PaymentController(PaymentService paymentService, UserService userService,
+                             AuditLogService auditLogService, ObjectMapper objectMapper,
                              @Value("${payment.webhook-secret:dev-webhook-secret}") String webhookSecret) {
         this.paymentService = paymentService;
         this.userService = userService;
+        this.auditLogService = auditLogService;
         this.objectMapper = objectMapper;
         this.webhookSecret = webhookSecret;
     }
@@ -84,6 +89,7 @@ public class PaymentController {
 
     private void verifySignature(String signature, String payload) {
         if (signature == null || signature.isBlank()) {
+            auditRejection("missing X-Korapay-Signature header");
             throw new UnauthorizedException("Missing payment webhook signature");
         }
         try {
@@ -91,6 +97,7 @@ public class PaymentController {
             mac.init(new SecretKeySpec(webhookSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
             String expected = bytesToHex(mac.doFinal(payload.getBytes(StandardCharsets.UTF_8)));
             if (!MessageDigest.isEqual(expected.getBytes(StandardCharsets.UTF_8), signature.trim().getBytes(StandardCharsets.UTF_8))) {
+                auditRejection("signature mismatch");
                 throw new UnauthorizedException("Invalid payment webhook signature");
             }
         } catch (UnauthorizedException ex) {
@@ -98,6 +105,11 @@ public class PaymentController {
         } catch (Exception ex) {
             throw new IllegalStateException("Could not verify payment webhook signature", ex);
         }
+    }
+
+    private void auditRejection(String reason) {
+        auditLogService.record(null, AuditEventType.PAYMENT_WEBHOOK_REJECTED,
+                "Rejected payment webhook: " + reason, null, null);
     }
 
     private String requiredText(JsonNode node, String... names) {

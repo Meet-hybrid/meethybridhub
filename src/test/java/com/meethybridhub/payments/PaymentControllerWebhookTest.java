@@ -3,6 +3,8 @@ package com.meethybridhub.payments;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.meethybridhub.common.api.GlobalExceptionHandler;
 import com.meethybridhub.common.exception.BadRequestException;
+import com.meethybridhub.identity.AuditEventType;
+import com.meethybridhub.identity.AuditLogService;
 import com.meethybridhub.identity.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,13 +45,16 @@ class PaymentControllerWebhookTest {
     private PaymentService paymentService;
     @Mock
     private UserService userService;
+    @Mock
+    private AuditLogService auditLogService;
 
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders
-                .standaloneSetup(new PaymentController(paymentService, userService, new ObjectMapper(), WEBHOOK_SECRET))
+                .standaloneSetup(new PaymentController(paymentService, userService, auditLogService,
+                        new ObjectMapper(), WEBHOOK_SECRET))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }
@@ -74,6 +79,8 @@ class PaymentControllerWebhookTest {
                 .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(paymentService);
+        verify(auditLogService).record(eq(null), eq(AuditEventType.PAYMENT_WEBHOOK_REJECTED),
+                argThat((String d) -> d.contains("missing")), eq(null), eq(null));
     }
 
     @Test
@@ -85,6 +92,8 @@ class PaymentControllerWebhookTest {
                 .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(paymentService);
+        verify(auditLogService).record(eq(null), eq(AuditEventType.PAYMENT_WEBHOOK_REJECTED),
+                argThat((String d) -> d.contains("mismatch")), eq(null), eq(null));
     }
 
     @Test
@@ -99,6 +108,8 @@ class PaymentControllerWebhookTest {
                 .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(paymentService);
+        verify(auditLogService).record(eq(null), eq(AuditEventType.PAYMENT_WEBHOOK_REJECTED),
+                argThat((String d) -> d.contains("mismatch")), eq(null), eq(null));
     }
 
     @Test
