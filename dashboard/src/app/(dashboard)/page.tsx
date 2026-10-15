@@ -62,26 +62,21 @@ export default function OverviewPage() {
       }
 
 
-      if (!stats) {
-        setStats({
+      setStats((current: any) => current ?? {
           totalOrders: 342,
           totalRevenue: 45892,
           totalProducts: 87,
           totalCustomers: 1234,
           pendingOrders: 18,
         });
-      }
 
-
-      if (orders.length === 0) {
-        setOrders([
+      setOrders((current) => current.length > 0 ? current : [
           { id: 1001, customer: "Alice Johnson", status: "PENDING", totalAmount: 12500, createdAt: "2026-09-01T10:30:00Z" },
           { id: 1002, customer: "Bob Smith", status: "CONFIRMED", totalAmount: 8900, createdAt: "2026-09-01T09:15:00Z" },
           { id: 1003, customer: "Carol White", status: "SHIPPED", totalAmount: 34200, createdAt: "2026-08-31T16:45:00Z" },
           { id: 1004, customer: "David Brown", status: "DELIVERED", totalAmount: 6700, createdAt: "2026-08-31T14:20:00Z" },
           { id: 1005, customer: "Eva Martinez", status: "PROCESSING", totalAmount: 21000, createdAt: "2026-08-30T11:00:00Z" },
         ]);
-      }
     }
     load();
   }, []);

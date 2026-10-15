@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ScrollText,
   Store,
@@ -108,7 +108,7 @@ export default function AdminAuditLogPage() {
   const [dateTo, setDateTo] = useState("");
   const [selectedLog, setSelectedLog] = useState<AuditLogEntry | null>(null);
 
-  const loadLogs = async () => {
+  const loadLogs = useCallback(async () => {
     setLoading(true);
     try {
       const params: any = { size: 100 };
@@ -136,11 +136,11 @@ export default function AdminAuditLogPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [actionFilter, dateFrom, dateTo]);
 
   useEffect(() => {
     loadLogs();
-  }, [actionFilter, dateFrom, dateTo]);
+  }, [loadLogs]);
 
   const filtered = logs;
 

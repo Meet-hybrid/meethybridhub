@@ -75,25 +75,21 @@ export default function AdminOverviewPage() {
         setLoading(false);
       }
 
-      if (!stats) {
-        setStats({
+      setStats((current: any) => current ?? {
           totalStores: 47,
           totalUsers: 1284,
           totalOrders: 3420,
           totalRevenue: 18500000,
           activeDisputes: 5,
         });
-      }
 
-      if (recentStores.length === 0) {
-        setRecentStores([
+      setRecentStores((current) => current.length > 0 ? current : [
           { id: 1, name: "Divine Signature", owner: "Amara Okafor", status: "ACTIVE", products: 45, createdAt: "2026-01-15T00:00:00Z" },
           { id: 2, name: "Lagos Couture", owner: "Tunde Bakare", status: "ACTIVE", products: 32, createdAt: "2026-03-22T00:00:00Z" },
           { id: 3, name: "Ankara Palace", owner: "Nneka Eze", status: "ACTIVE", products: 67, createdAt: "2025-11-08T00:00:00Z" },
           { id: 4, name: "Urban Threads", owner: "Chidi Nwosu", status: "PENDING", products: 12, createdAt: "2026-08-01T00:00:00Z" },
           { id: 5, name: "Heritage Fabrics", owner: "Folake Williams", status: "SUSPENDED", products: 28, createdAt: "2026-02-14T00:00:00Z" },
         ]);
-      }
     }
     load();
   }, []);

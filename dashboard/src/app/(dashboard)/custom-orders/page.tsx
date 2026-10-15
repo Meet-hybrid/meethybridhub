@@ -69,8 +69,9 @@ export default function CustomOrdersPage() {
   }, []);
 
   useEffect(() => {
-    if (selectedRequest) {
-      loadMessages(selectedRequest.id);
+    const requestId = selectedRequest?.id;
+    if (requestId) {
+      loadMessages(requestId);
     }
   }, [selectedRequest?.id]);
 
