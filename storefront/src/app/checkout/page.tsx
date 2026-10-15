@@ -9,6 +9,7 @@ import { useStore } from "@/components/StoreProvider";
 export default function CheckoutPage() {
   const store = useStore();
   const { items, total, removeItem, clear } = useCart();
+  const paymentsEnabled = process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === "true";
   const [payment, setPayment] = useState<"FULL" | "INSTALLMENT">("FULL");
   const [installments, setInstallments] = useState(3);
   const [form, setForm] = useState({ email: "", address: "", notes: "" });
@@ -23,8 +24,12 @@ export default function CheckoutPage() {
       const order = await storefrontApi.createOrder({ customerEmail: form.email, shippingAddress: form.address, notes: form.notes, items: items.map(item => ({ variantId: item.variantId, quantity: item.quantity })) });
       if (payment === "INSTALLMENT") {
         const plan = await storefrontApi.createInstallmentPlan(order.id, installments);
-        setMessage(`Order ${order.orderNumber} created. Your ${plan.installmentCount}-part plan is ${money(plan.installmentAmount)} per payment.`);
-      } else setMessage(`Order ${order.orderNumber} created. Continue to payment to complete your purchase.`);
+        setMessage(`Order ${order.orderNumber} created. Your ${plan.installmentCount}-part plan is ${money(plan.installmentAmount)} per payment. Payment collection is not enabled in this staging environment.`);
+      } else if (paymentsEnabled) {
+        setMessage(`Order ${order.orderNumber} created. Continue to payment to complete your purchase.`);
+      } else {
+        setMessage(`Order ${order.orderNumber} created. Payment processing is not enabled in this staging environment.`);
+      }
       clear();
     } catch (error) { setMessage(error instanceof Error ? error.message : "Checkout could not be completed."); }
     finally { setLoading(false); }
@@ -64,7 +69,7 @@ export default function CheckoutPage() {
               <fieldset>
                 <legend className="text-lg font-semibold mb-3">Payment option</legend>
                 <label className="block border border-[#0B4A2B]/20 p-4 rounded-lg mb-3 cursor-pointer hover:bg-[#0B4A2B]/5">
-                  <input type="radio" checked={payment === "FULL"} onChange={() => setPayment("FULL")} /> <span className="ml-2">Pay in full</span>
+                  <input type="radio" checked={payment === "FULL"} onChange={() => setPayment("FULL")} /> <span className="ml-2">Pay in full{!paymentsEnabled && " (staging record)"}</span>
                 </label>
                 <label className="block border border-[#0B4A2B]/20 p-4 rounded-lg cursor-pointer hover:bg-[#0B4A2B]/5">
                   <input type="radio" checked={payment === "INSTALLMENT"} onChange={() => setPayment("INSTALLMENT")} /> <span className="ml-2">Pay in installments</span>
@@ -77,7 +82,7 @@ export default function CheckoutPage() {
                 )}
               </fieldset>
               <button disabled={loading} className="w-full py-3 rounded-full bg-[#0B4A2B] text-[#FAFAF8] font-semibold hover:bg-[#07331D] transition-colors disabled:opacity-50">
-                {loading ? "Processing…" : payment === "INSTALLMENT" ? "Create installment plan" : "Place order"}
+                {loading ? "Processing…" : payment === "INSTALLMENT" ? "Create installment plan" : paymentsEnabled ? "Place order" : "Place order (staging)"}
               </button>
             </form>
             <aside className="bg-white border border-[#0B4A2B]/10 rounded-xl p-5 h-fit">
@@ -124,7 +129,7 @@ export default function CheckoutPage() {
             <fieldset>
               <legend className="text-lg font-semibold mb-3">Payment option</legend>
               <label className="block border border-white/20 p-4 rounded-lg mb-3">
-                <input type="radio" checked={payment === "FULL"} onChange={() => setPayment("FULL")} /> <span className="ml-2">Pay in full</span>
+                <input type="radio" checked={payment === "FULL"} onChange={() => setPayment("FULL")} /> <span className="ml-2">Pay in full{!paymentsEnabled && " (staging record)"}</span>
               </label>
               <label className="block border border-white/20 p-4 rounded-lg">
                 <input type="radio" checked={payment === "INSTALLMENT"} onChange={() => setPayment("INSTALLMENT")} /> <span className="ml-2">Pay in installments</span>
@@ -137,7 +142,7 @@ export default function CheckoutPage() {
               )}
             </fieldset>
             <button disabled={loading} className="w-full py-3 rounded-full bg-amber-600 font-semibold disabled:opacity-50">
-              {loading ? "Processing…" : payment === "INSTALLMENT" ? "Create installment plan" : "Place order"}
+              {loading ? "Processing…" : payment === "INSTALLMENT" ? "Create installment plan" : paymentsEnabled ? "Place order" : "Place order (staging)"}
             </button>
           </form>
           <aside className="bg-white/5 border border-white/10 rounded-xl p-5 h-fit">
