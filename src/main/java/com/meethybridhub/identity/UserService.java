@@ -22,13 +22,24 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 
-
+/**
+ * Service layer for user management and authentication business logic.
+ *
+ * This service handles:
+ *   - User registration with validation
+ *   - Email verification workflow
+ *   - Password reset functionality
+ *   - Account status management
+ *   - Security audit logging
+ *
+ * Business rules belong here, not in controllers or repositories.
+ */
 @Service
 @Transactional
 public class UserService {
 
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
-
+    
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final int VERIFICATION_TOKEN_EXPIRY_HOURS = 24;
     private static final int RESET_TOKEN_EXPIRY_MINUTES = 60;
@@ -83,7 +94,8 @@ public class UserService {
         );
         emailVerificationTokenRepository.save(verificationToken);
 
-
+        // A failure to send email must NEVER roll back the registration — the
+        // account and its (resendable) token are already persisted.
         try {
             emailService.sendVerificationEmail(
                     savedUser.getEmail(),
@@ -101,7 +113,11 @@ public class UserService {
         return savedUser;
     }
 
-
+    /**
+     * Verify a user's email address with a one-time token.
+     *
+     * @throws BadRequestException if the token is unknown, already used, or expired
+     */
     public void verifyEmail(String token) {
         EmailVerificationToken verificationToken = emailVerificationTokenRepository.findByToken(token)
                 .orElseThrow(() -> new BadRequestException("Invalid verification token"));
@@ -120,7 +136,7 @@ public class UserService {
         user.setStatus(User.UserStatus.ACTIVE);
         userRepository.save(user);
 
-
+        // Consume the token so it cannot be replayed.
         verificationToken.setUsedAt(Instant.now());
         emailVerificationTokenRepository.save(verificationToken);
 
@@ -129,7 +145,12 @@ public class UserService {
         log.info("Email verified for user: {}", user.getEmail());
     }
 
-
+    /**
+     * Re-send the verification email (e.g. the original link expired or was lost).
+     *
+     * Silently succeeds for unknown or already-verified addresses: the response
+     * must never reveal whether an account exists.
+     */
     public void resendVerificationEmail(String email) {
         Optional<User> userOptional = userRepository.findByEmail(email);
 
@@ -144,7 +165,7 @@ public class UserService {
             return;
         }
 
-
+        // Invalidate outstanding unused tokens so only the latest link works.
         emailVerificationTokenRepository.deleteByUserIdAndUsedAtIsNull(user.getId());
 
         EmailVerificationToken verificationToken = new EmailVerificationToken(
@@ -160,11 +181,14 @@ public class UserService {
             log.error("Failed to send verification email to {}: {}", user.getEmail(), e.getMessage());
         }
 
-
+        // User ID, never the email — see requestPasswordReset for the rationale.
         log.info("Verification email resent to user id: {}", user.getId());
     }
 
-
+    /**
+     * Request password reset for a user.
+     * For security, always returns success even if user doesn't exist.
+     */
     public void requestPasswordReset(String email) {
         Optional<User> userOptional = userRepository.findByEmail(email);
 
@@ -184,18 +208,25 @@ public class UserService {
         );
         passwordResetTokenRepository.save(resetToken);
 
-
+        // Email failure must not break the flow — the token is persisted and the
+        // user can simply request another one.
         try {
             emailService.sendPasswordResetEmail(user.getEmail(), user.getFullName(), resetToken.getToken());
         } catch (Exception e) {
             log.error("Failed to send password reset email to {}: {}", user.getEmail(), e.getMessage());
         }
 
-
+        // Log the user ID, never the email: the non-existent-user branch logs at
+        // DEBUG, so logging the email here at INFO would let log readers
+        // enumerate registered addresses.
         log.info("Password reset token issued for user id: {}", user.getId());
     }
 
-
+    /**
+     * Confirm password reset with token.
+     *
+     * @throws BadRequestException if the token is unknown, already used, or expired
+     */
     public void confirmPasswordReset(String token, String newPassword) {
         PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(token)
                 .orElseThrow(() -> new BadRequestException("Invalid reset token"));
@@ -212,16 +243,16 @@ public class UserService {
         User user = userRepository.findById(resetToken.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found for reset token"));
 
-
+        // A soft-deleted account must not be able to regain credentials.
         if (user.getStatus() == User.UserStatus.DELETED) {
             throw new BadRequestException("Cannot reset password for a deleted account");
         }
 
         user.setPasswordHash(passwordEncoder.encode(newPassword));
-        user.bumpPasswordVersion();
+        user.bumpPasswordVersion(); // invalidates all previously issued JWTs
         userRepository.save(user);
 
-
+        // Consume the token so it cannot be replayed.
         resetToken.setUsedAt(Instant.now());
         passwordResetTokenRepository.save(resetToken);
 
@@ -233,10 +264,10 @@ public class UserService {
     public void recordLogin(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
-
+        
         user.recordLogin();
         userRepository.save(user);
-
+        
         log.debug("Login recorded for user: {}", email);
     }
 
@@ -244,7 +275,9 @@ public class UserService {
         return userDetailsService.loadUserByUsername(email);
     }
 
-
+    /**
+     * List users, optionally filtered by status and/or role (admin only).
+     */
     public List<User> listUsers(String status, String role) {
         if (role != null && !role.isBlank()) {
             return userRepository.findByRole(role.trim().toUpperCase(Locale.ROOT));
@@ -276,7 +309,12 @@ public class UserService {
         return userRepository.save(user);
     }
 
-
+    /**
+     * Verify that {@code password} matches the user's current password.
+     * Used before destructive actions such as account deletion.
+     *
+     * @throws BadRequestException if the password is incorrect
+     */
     public void verifyPassword(Long userId, String password) {
         User user = getUserById(userId);
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
@@ -294,7 +332,7 @@ public class UserService {
         validatePassword(newPassword);
 
         user.setPasswordHash(passwordEncoder.encode(newPassword));
-        user.bumpPasswordVersion();
+        user.bumpPasswordVersion(); // invalidates all previously issued JWTs
         userRepository.save(user);
 
         auditLogService.record(userId, AuditEventType.PASSWORD_CHANGED,
@@ -302,14 +340,20 @@ public class UserService {
         log.info("Password changed for user ID: {}", userId);
     }
 
-
+    /**
+     * Update user roles (admin only). Roles are validated against
+     * {@link Role} and normalized to a canonical, deduplicated form.
+     */
     public User updateRoles(Long userId, String roles) {
         User user = getUserById(userId);
         user.setRoles(normalizeRoles(roles));
         return userRepository.save(user);
     }
 
-
+    /**
+     * "customer, store_owner, CUSTOMER" -> "CUSTOMER,STORE_OWNER".
+     * Throws {@link BadRequestException} if any role is unknown.
+     */
     private String normalizeRoles(String roles) {
         Set<String> valid = new LinkedHashSet<>();
         for (String raw : roles.split(",")) {
@@ -330,14 +374,22 @@ public class UserService {
         return String.join(",", valid);
     }
 
-
+    /**
+     * Update user status (admin only).
+     */
     public User updateStatus(Long userId, User.UserStatus status) {
         User user = getUserById(userId);
         user.setStatus(status);
         return userRepository.save(user);
     }
 
-
+    /**
+     * Soft delete user (admin only).
+     *
+     * Mutates the entity rather than issuing a bulk @Modifying query so the
+     * change is visible to the current persistence context (important for
+     * callers sharing a transaction, e.g. integration tests).
+     */
     public void softDelete(Long userId) {
         User user = getUserById(userId);
         user.setStatus(User.UserStatus.DELETED);
@@ -361,7 +413,10 @@ public class UserService {
         }
     }
 
-
+    /**
+     * Generate a cryptographically random 64-character hex token.
+     * Matches the VARCHAR(64) columns in the *_tokens tables.
+     */
     private String generateOpaqueToken() {
         byte[] bytes = new byte[32];
         SECURE_RANDOM.nextBytes(bytes);

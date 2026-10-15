@@ -16,7 +16,30 @@ import java.io.IOException;
 import java.util.Locale;
 import java.util.Optional;
 
-
+/**
+ * Tenant resolution middleware ("StoreFilter").
+ *
+ * Runs on every request and decides which store (tenant) the request belongs
+ * to, then stores that decision in {@link TenantContext} for the rest of the
+ * request. The context is always cleared afterwards, so one request can never
+ * leak a tenant into another.
+ *
+ * Resolution order (first match wins):
+ *   1. {@code X-Store-Id} header   — explicit tenant for API clients
+ *   2. Subdomain from the Host header — an explicit destination (storefront),
+ *      e.g. {@code divine-signature.meethybridhub.com} -> slug {@code divine-signature};
+ *      wins over the claim so a multi-store owner browsing one of their stores
+ *      resolves THAT store, not the one the token was issued for
+ *   3. {@code storeId} JWT claim   — implicit default (the store the token was
+ *      issued for at login/refresh), so dashboards need no headers or subdomain
+ *
+ * SECURITY NOTE: resolution alone is NOT authorization. The {@code X-Store-Id}
+ * header is client-controlled, and the only thing preventing a store owner from
+ * reaching another store's data is the ownership check in
+ * {@code StoreService.getCurrentTenantStore} (admins bypass it). Every
+ * store-scoped operation MUST funnel through that method — never read
+ * TenantContext directly in a controller.
+ */
 @Component
 public class StoreFilter extends OncePerRequestFilter {
 
@@ -39,7 +62,7 @@ public class StoreFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
-
+        // No tenant context is meaningful for public/auth infrastructure paths.
         String path = request.getServletPath();
         return path.startsWith("/actuator/")
                 || path.startsWith("/v3/api-docs")
@@ -62,7 +85,7 @@ public class StoreFilter extends OncePerRequestFilter {
             resolveTenant(request);
             filterChain.doFilter(request, response);
         } finally {
-
+            // Never leak a tenant into another request/thread.
             TenantContext.clear();
         }
     }
@@ -78,7 +101,11 @@ public class StoreFilter extends OncePerRequestFilter {
                 });
     }
 
-
+    /**
+     * 1) Explicit {@code X-Store-Id} header. The store must exist — a bogus
+     * header is ignored (falls through to subdomain resolution) rather than
+     * creating a phantom tenant.
+     */
     private Optional<Long> resolveFromHeader(HttpServletRequest request) {
         String header = request.getHeader(STORE_HEADER);
         if (header == null || header.isBlank()) {
@@ -124,7 +151,11 @@ public class StoreFilter extends OncePerRequestFilter {
         return Optional.empty();
     }
 
-
+    /**
+     * 2) Subdomain from the Host header. Only single-label subdomains of the
+     * configured base domain are considered: {@code x.meethybridhub.com} -> slug
+     * {@code x}. The bare base domain and {@code localhost} carry no tenant.
+     */
     private Optional<Long> resolveFromSubdomain(HttpServletRequest request) {
         return extractSubdomain(request)
                 .flatMap(storeRepository::findBySlug)

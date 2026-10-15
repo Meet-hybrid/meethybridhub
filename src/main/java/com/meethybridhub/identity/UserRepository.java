@@ -24,7 +24,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     List<User> findByCreatedAtAfter(Instant date);
 
-
+    /**
+     * Find users with a specific role.
+     * Uses custom query because roles are stored as comma-separated string.
+     */
     @Query("SELECT u FROM User u WHERE u.roles LIKE %:role%")
     List<User> findByRole(@Param("role") String role);
 

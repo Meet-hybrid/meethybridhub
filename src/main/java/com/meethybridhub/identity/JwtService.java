@@ -15,14 +15,32 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-
+/**
+ * Service for JWT token creation, validation, and parsing.
+ *
+ * Uses the modern jjwt API (0.13.x) which enforces secure defaults:
+ *   - All signing keys must be ≥ 256‑bit (HS256 minimum).
+ *   - Claims are validated automatically during parsing.
+ *
+ * Environment variable JWT_SECRET must be set (at least 32 random bytes).
+ * In production, this should be a securely generated secret stored in a
+ * secret manager, NOT in the codebase.
+ */
 @Service
 public class JwtService {
 
-
+    /**
+     * Claim carrying the user's password version. Tokens whose claim no longer
+     * matches the user's current version are rejected, so a password change
+     * invalidates every previously issued token.
+     */
     private static final String CLAIM_PASSWORD_VERSION = "pwdv";
 
-
+    /**
+     * Claim carrying the store ID the user owns (if any) at token issuance.
+     * StoreFilter uses it to resolve the tenant for store-owner dashboards
+     * without an explicit X-Store-Id header or subdomain.
+     */
     public static final String CLAIM_STORE_ID = "storeId";
 
     @Value("${jwt.secret:changemeinproductionatleast32bytessecrethere}")
@@ -70,7 +88,10 @@ public class JwtService {
                 refreshTokenExpirationDays, ChronoUnit.DAYS);
     }
 
-
+    /**
+     * Claims common to every token, currently the password version so that
+     * tokens issued before a password change are rejected.
+     */
     private Map<String, Object> baseClaims(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
         if (userDetails instanceof AppUser appUser) {
@@ -85,7 +106,7 @@ public class JwtService {
                     claims -> claims.get(CLAIM_PASSWORD_VERSION, Integer.class));
             return tokenVersion != null && tokenVersion.equals(appUser.getPasswordVersion());
         }
-        return true;
+        return true; // non-AppUser principal (shouldn't happen) — don't block
     }
 
     public boolean validateToken(String token, UserDetails userDetails) {
