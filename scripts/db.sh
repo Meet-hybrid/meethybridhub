@@ -8,7 +8,7 @@
 # service and no system-wide library path — this script manages a single-user
 # cluster running as $USER instead.
 #
-#   ./scripts/db.sh start   # initdb (first run) + start on :5432
+#   ./scripts/db.sh start   # initdb (first run) + start on :5433
 #   ./scripts/db.sh stop    # graceful shutdown
 #   ./scripts/db.sh status  # is it up?
 #   ./scripts/db.sh psql    # interactive psql as postgres
@@ -21,7 +21,7 @@ PGDATA="$HOME/pgdata"
 PGLOG="$PGDATA/server.log"
 export LD_LIBRARY_PATH="$PGROOT/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH:-}"
 
-PORT=5432
+PORT=5433
 DB_NAME="meethybridhub"
 SUPERUSER="postgres"
 SUPERUSER_PASSWORD="postgres"   # dev-only credential, matches application.yml defaults

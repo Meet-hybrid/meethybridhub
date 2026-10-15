@@ -71,6 +71,17 @@ public class OrderController {
         return ResponseEntity.ok(OrderResponse.from(orderService.cancel(TenantContext.requireStoreId(), orderId, user)));
     }
 
+    @PutMapping("/{orderId}/status")
+    @PreAuthorize("hasAnyRole('STORE_OWNER', 'ADMIN')")
+    public ResponseEntity<OrderResponse> updateStatus(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long orderId,
+            @RequestBody UpdateStatusRequest request) {
+        User user = userService.getUserByEmail(userDetails.getUsername());
+        return ResponseEntity.ok(OrderResponse.from(orderService.updateStatus(
+                TenantContext.requireStoreId(), orderId, user, request.status())));
+    }
+
     public record CreateOrderRequest(
             @NotBlank @Email String customerEmail,
             @NotBlank @Size(max = 3000) String shippingAddress,
@@ -81,6 +92,8 @@ public class OrderController {
     public record OrderLineRequest(
             @NotNull Long variantId,
             @Min(1) int quantity) {}
+
+    public record UpdateStatusRequest(OrderStatus status) {}
 
     public record OrderResponse(Long id, Long storeId, Long customerId, String orderNumber,
                                 OrderStatus status, BigDecimal totalAmount, String customerEmail,

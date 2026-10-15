@@ -91,6 +91,16 @@ public class OrderService {
         return orderRepository.save(order);
     }
 
+    public Order updateStatus(Long storeId, Long orderId, User requester, OrderStatus status) {
+        if (!requester.hasRole("ADMIN") && !requester.hasRole("STORE_OWNER")) {
+            throw new ForbiddenException("Only store staff can update order status");
+        }
+        Order order = orderRepository.findByIdAndStoreId(orderId, storeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));
+        order.setStatus(status);
+        return orderRepository.save(order);
+    }
+
     private void authorize(Order order, User requester) {
         boolean staff = requester.hasRole("ADMIN") || requester.hasRole("STORE_OWNER");
         if (!staff && (order.getCustomerId() == null || !order.getCustomerId().equals(requester.getId()))) {

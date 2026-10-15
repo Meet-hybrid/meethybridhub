@@ -52,16 +52,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
-        
-        // Skip filter for public endpoints (already configured in SecurityConfig)
         if (isPublicEndpoint(request)) {
             filterChain.doFilter(request, response);
             return;
         }
 
         final String authHeader = request.getHeader(AUTHORIZATION_HEADER);
-        
-        // No Authorization header → continue as unauthenticated
+
         if (authHeader == null || !authHeader.startsWith(BEARER_PREFIX)) {
             filterChain.doFilter(request, response);
             return;
@@ -71,10 +68,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             final String jwt = authHeader.substring(BEARER_PREFIX.length());
             final String userEmail = jwtService.extractUsername(jwt);
 
-            // If we have a username and no existing authentication in context
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                
-                // Load user details from database
                 UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
                 
                 // Validate the token AND that the account may actually use the API.
@@ -84,18 +78,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         && jwtService.passwordVersionMatches(jwt, userDetails)
                         && userDetails.isEnabled()
                         && userDetails.isAccountNonLocked()) {
-                    
-                    // Create authentication token
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails,
                             null, // credentials are null since we're using token auth
                             userDetails.getAuthorities()
                     );
-                    
-                    // Add request details (IP, session ID, etc.)
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    
-                    // Set authentication in security context
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                     
                     log.debug("Authenticated user: {}", userEmail);
@@ -107,8 +95,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // Log error but don't fail the request - let authorization handle it
             log.error("JWT authentication error for request {}: {}", 
                      request.getRequestURI(), e.getMessage(), e);
-            
-            // Clear security context in case of any contamination
             SecurityContextHolder.clearContext();
         }
 
@@ -121,8 +107,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      */
     private boolean isPublicEndpoint(HttpServletRequest request) {
         String path = request.getServletPath();
-        
-        // Public endpoints from SecurityConfig
+
         return path.startsWith("/actuator/health") ||
                path.startsWith("/v3/api-docs") ||
                path.startsWith("/swagger-ui") ||
@@ -135,17 +120,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                path.equals("/api/v1/auth/resend-verification");
     }
 
-    /**
-     * Should not filter error dispatches.
-     */
     @Override
     protected boolean shouldNotFilterErrorDispatch() {
         return true;
     }
 
-    /**
-     * Should not filter async dispatches.
-     */
     @Override
     protected boolean shouldNotFilterAsyncDispatch() {
         return true;

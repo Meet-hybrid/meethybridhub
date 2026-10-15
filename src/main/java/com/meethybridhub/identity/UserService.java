@@ -69,33 +69,24 @@ public class UserService {
         this.auditLogService = auditLogService;
     }
 
-    /**
-     * Register a new user with email verification.
-     */
     public User register(AuthController.RegisterRequest request) {
-        // Validate email uniqueness (case-insensitive)
         if (userRepository.existsByEmailIgnoreCase(request.email())) {
             throw new IllegalArgumentException("Email already registered: " + request.email());
         }
 
-        // Validate password strength
         validatePassword(request.password());
 
-        // Create user entity
         User user = new User(
                 request.email().toLowerCase().trim(),
                 passwordEncoder.encode(request.password()),
                 request.fullName().trim()
         );
 
-        // Set initial role (default is CUSTOMER, can be overridden later)
         user.setRoles("CUSTOMER");
-        user.setStatus(User.UserStatus.PENDING); // Requires email verification
+        user.setStatus(User.UserStatus.PENDING);
 
-        // Save user
         User savedUser = userRepository.save(user);
 
-        // Create and persist a one-time verification token, then email the link
         EmailVerificationToken verificationToken = new EmailVerificationToken(
                 savedUser.getId(),
                 generateOpaqueToken(),
@@ -164,7 +155,6 @@ public class UserService {
         Optional<User> userOptional = userRepository.findByEmail(email);
 
         if (userOptional.isEmpty()) {
-            // Security: don't reveal if user exists or not
             log.debug("Verification resend requested for non-existent email: {}", email);
             return;
         }
@@ -203,14 +193,12 @@ public class UserService {
         Optional<User> userOptional = userRepository.findByEmail(email);
 
         if (userOptional.isEmpty()) {
-            // Security: don't reveal if user exists or not
             log.debug("Password reset requested for non-existent email: {}", email);
             return;
         }
 
         User user = userOptional.get();
 
-        // Invalidate any outstanding reset tokens, then issue a fresh one.
         passwordResetTokenRepository.deleteByUserIdAndUsedAtIsNull(user.getId());
 
         PasswordResetToken resetToken = new PasswordResetToken(
@@ -273,9 +261,6 @@ public class UserService {
         log.info("Password reset confirmed for user: {}", user.getEmail());
     }
 
-    /**
-     * Record user login timestamp.
-     */
     public void recordLogin(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
@@ -286,9 +271,6 @@ public class UserService {
         log.debug("Login recorded for user: {}", email);
     }
 
-    /**
-     * Load user by username (email).
-     */
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         return userDetailsService.loadUserByUsername(email);
     }
@@ -311,25 +293,16 @@ public class UserService {
         return userRepository.findAll();
     }
 
-    /**
-     * Get user by ID.
-     */
     public User getUserById(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
     }
 
-    /**
-     * Get user by email.
-     */
     public User getUserByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with email: " + email));
     }
 
-    /**
-     * Update user profile.
-     */
     public User updateProfile(Long userId, String fullName) {
         User user = getUserById(userId);
         user.setFullName(fullName.trim());
@@ -349,21 +322,15 @@ public class UserService {
         }
     }
 
-    /**
-     * Change user password.
-     */
     public void changePassword(Long userId, String currentPassword, String newPassword) {
         User user = getUserById(userId);
-        
-        // Verify current password
+
         if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
             throw new IllegalArgumentException("Current password is incorrect");
         }
-        
-        // Validate new password
+
         validatePassword(newPassword);
-        
-        // Update password
+
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         user.bumpPasswordVersion(); // invalidates all previously issued JWTs
         userRepository.save(user);
@@ -430,26 +397,17 @@ public class UserService {
         log.info("User soft deleted: ID {}", userId);
     }
 
-    /**
-     * Validate password meets security requirements.
-     */
     private void validatePassword(String password) {
         if (password == null || password.length() < 8) {
             throw new IllegalArgumentException("Password must be at least 8 characters long");
         }
-        
-        // Check for common password patterns (basic check)
-        if (password.equals(password.toLowerCase()) || 
+        if (password.equals(password.toLowerCase()) ||
             password.equals(password.toUpperCase())) {
             throw new IllegalArgumentException("Password must contain both uppercase and lowercase letters");
         }
-        
-        // Check for digits
         if (!password.matches(".*\\d.*")) {
             throw new IllegalArgumentException("Password must contain at least one digit");
         }
-        
-        // Check for special characters
         if (!password.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?].*")) {
             throw new IllegalArgumentException("Password must contain at least one special character");
         }

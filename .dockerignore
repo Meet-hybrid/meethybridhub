@@ -1,0 +1,18 @@
+# Only pom.xml and src/ are needed for the backend image.
+.git
+.gitignore
+target/
+dashboard/
+storefront/
+venv/
+node_modules/
+docs/
+scripts/
+.idea/
+.vscode/
+*.md
+cli.py
+start.sh
+codecov.yml
+Dockerfile
+docker-compose.yml

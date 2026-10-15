@@ -1,5 +1,8 @@
 package com.meethybridhub.payments;
 
+import com.meethybridhub.common.exception.BadRequestException;
+import com.meethybridhub.identity.AuditEventType;
+import com.meethybridhub.identity.AuditLogService;
 import com.meethybridhub.identity.User;
 import com.meethybridhub.orders.Order;
 import com.meethybridhub.orders.OrderRepository;
@@ -16,6 +19,9 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -24,6 +30,11 @@ class PaymentInstallmentServiceTest {
     @Mock OrderRepository orders;
     @Mock OrderService ordersService;
     @Mock InstallmentPlanRepository plans;
+    @Mock AuditLogService audit;
+
+    private PaymentService service() {
+        return new PaymentService(payments, ordersService, orders, audit);
+    }
 
     @Test
     void initializesIdempotentPaymentAndProcessesPaidWebhook() {
@@ -32,12 +43,12 @@ class PaymentInstallmentServiceTest {
         when(payments.findByStoreIdAndIdempotencyKey(7L, "key")).thenReturn(Optional.empty());
         when(ordersService.get(7L, 1L, requester)).thenReturn(order);
         when(payments.save(any(Payment.class))).thenAnswer(i -> { Payment p = i.getArgument(0); ReflectionTestUtils.setField(p, "id", 4L); return p; });
-        Payment payment = new PaymentService(payments, ordersService, orders).initialize(7L, 1L, requester, PaymentMethod.CARD, " key ");
+        Payment payment = service().initialize(7L, 1L, requester, PaymentMethod.CARD, " key ");
         assertThat(payment.getTransactionId()).isEqualTo("KORAPAY-4");
 
         when(payments.findByStoreIdAndTransactionId(7L, "KORAPAY-4")).thenReturn(Optional.of(payment));
         when(orders.findByIdAndStoreId(7L, 1L)).thenReturn(Optional.of(order));
-        Payment result = new PaymentService(payments, ordersService, orders)
+        Payment result = service()
                 .applyWebhook(7L, "KORAPAY-4", "success", new BigDecimal("20.00"), "{}");
         assertThat(result.getStatus()).isEqualTo(PaymentStatus.PAID);
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PROCESSING);
@@ -54,6 +65,162 @@ class PaymentInstallmentServiceTest {
         assertThat(plan.getPayments()).hasSize(3);
         assertThat(plan.getPayments().get(2).getAmount()).isEqualByComparingTo("6.66");
         assertThat(plan.getPayments().get(0).getPlanId()).isNull();
+    }
+
+    @Test
+    void initializeRejectsBlankIdempotencyKey() {
+        assertThatThrownBy(() -> service()
+                .initialize(7L, 1L, user(), PaymentMethod.CARD, "  "))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("required");
+    }
+
+    @Test
+    void initializeRejectsCancelledOrder() {
+        User requester = user();
+        Order order = order();
+        order.setStatus(OrderStatus.CANCELLED);
+        when(payments.findByStoreIdAndIdempotencyKey(7L, "key")).thenReturn(Optional.empty());
+        when(ordersService.get(7L, 1L, requester)).thenReturn(order);
+
+        assertThatThrownBy(() -> service()
+                .initialize(7L, 1L, requester, PaymentMethod.CARD, "key"))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("cancelled");
+    }
+
+    @Test
+    void initializeRejectsZeroAmount() {
+        User requester = user();
+        Order order = order();
+        order.setTotalAmount(BigDecimal.ZERO);
+        when(payments.findByStoreIdAndIdempotencyKey(7L, "key")).thenReturn(Optional.empty());
+        when(ordersService.get(7L, 1L, requester)).thenReturn(order);
+
+        assertThatThrownBy(() -> service()
+                .initialize(7L, 1L, requester, PaymentMethod.CARD, "key"))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("greater than zero");
+    }
+
+    @Test
+    void applyWebhookHandlesFailedStatus() {
+        User requester = user();
+        Order order = order();
+        Payment payment = payment();
+        when(payments.findByStoreIdAndTransactionId(7L, "TXN-1")).thenReturn(Optional.of(payment));
+        when(payments.save(any(Payment.class))).thenAnswer(i -> i.getArgument(0));
+
+        Payment result = service()
+                .applyWebhook(7L, "TXN-1", "failed", new BigDecimal("20.00"), "{}") ;
+
+        assertThat(result.getStatus()).isEqualTo(PaymentStatus.FAILED);
+    }
+
+    @Test
+    void applyWebhookHandlesRefundedStatus() {
+        Payment payment = payment();
+        payment.setStatus(PaymentStatus.PAID);
+        when(payments.findByStoreIdAndTransactionId(7L, "TXN-1")).thenReturn(Optional.of(payment));
+        when(payments.save(any(Payment.class))).thenAnswer(i -> i.getArgument(0));
+
+        Payment result = service()
+                .applyWebhook(7L, "TXN-1", "refunded", new BigDecimal("20.00"), "{}");
+
+        assertThat(result.getStatus()).isEqualTo(PaymentStatus.REFUNDED);
+    }
+
+    @Test
+    void applyWebhookIgnoresSameStatusReplay() {
+        Payment payment = payment();
+        payment.setStatus(PaymentStatus.PAID);
+        when(payments.findByStoreIdAndTransactionId(7L, "TXN-1")).thenReturn(Optional.of(payment));
+
+        Payment result = service()
+                .applyWebhook(7L, "TXN-1", "success", new BigDecimal("20.00"), "{}");
+
+        assertThat(result.getStatus()).isEqualTo(PaymentStatus.PAID);
+        verify(payments, never()).save(any(Payment.class));
+        verify(audit, never()).record(any(), any(), anyString(), any(), any());
+    }
+
+    @Test
+    void applyWebhookRejectsPaidToFailedTransition() {
+        Payment payment = payment();
+        payment.setStatus(PaymentStatus.PAID);
+        when(payments.findByStoreIdAndTransactionId(7L, "TXN-1")).thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> service()
+                .applyWebhook(7L, "TXN-1", "failed", new BigDecimal("20.00"), "{}"))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("PAID");
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.PAID);
+        verifyAuditRejected("TXN-1");
+    }
+
+    @Test
+    void applyWebhookRejectsRefundOfUnpaidPayment() {
+        Payment payment = payment();
+        when(payments.findByStoreIdAndTransactionId(7L, "TXN-1")).thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> service()
+                .applyWebhook(7L, "TXN-1", "refunded", new BigDecimal("20.00"), "{}"))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("not PAID");
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.PENDING);
+        verifyAuditRejected("TXN-1");
+    }
+
+    @Test
+    void applyWebhookRejectsTransitionAfterRefund() {
+        Payment payment = payment();
+        payment.setStatus(PaymentStatus.REFUNDED);
+        when(payments.findByStoreIdAndTransactionId(7L, "TXN-1")).thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> service()
+                .applyWebhook(7L, "TXN-1", "success", new BigDecimal("20.00"), "{}"))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("refunded");
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.REFUNDED);
+        verifyAuditRejected("TXN-1");
+    }
+
+    @Test
+    void applyWebhookRejectsUnsupportedStatus() {
+        Payment payment = payment();
+        when(payments.findByStoreIdAndTransactionId(7L, "TXN-1")).thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> service()
+                .applyWebhook(7L, "TXN-1", "unknown", new BigDecimal("20.00"), "{}"))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("Unsupported");
+        verifyAuditRejected("TXN-1");
+    }
+
+    @Test
+    void applyWebhookRejectsAmountMismatch() {
+        Payment payment = payment();
+        when(payments.findByStoreIdAndTransactionId(7L, "TXN-1")).thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> service()
+                .applyWebhook(7L, "TXN-1", "success", new BigDecimal("99.00"), "{}"))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("does not match");
+        verifyAuditRejected("TXN-1");
+    }
+
+    private void verifyAuditRejected(String transactionId) {
+        verify(audit).record(eq(null), eq(AuditEventType.PAYMENT_WEBHOOK_REJECTED),
+                argThat((String d) -> d.contains(transactionId)), eq(null), eq(null));
+    }
+
+    private Payment payment() {
+        User requester = user();
+        Order order = order();
+        Payment p = new Payment(7L, order, PaymentMethod.CARD, new BigDecimal("20.00"), "key");
+        ReflectionTestUtils.setField(p, "id", 4L);
+        p.setTransactionId("TXN-1");
+        return p;
     }
 
     private User user() { User u = new User("buyer@example.com", "hash", "Buyer"); ReflectionTestUtils.setField(u, "id", 2L); return u; }

@@ -3,6 +3,8 @@ package com.meethybridhub.store;
 import com.meethybridhub.common.exception.BadRequestException;
 import com.meethybridhub.common.exception.ForbiddenException;
 import com.meethybridhub.common.exception.ResourceNotFoundException;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import com.meethybridhub.identity.AuditEventType;
 import com.meethybridhub.identity.AuditLogService;
 import com.meethybridhub.identity.User;
@@ -44,6 +46,7 @@ public class StoreService {
     }
 
 
+    @CacheEvict(value = "stores", allEntries = true)
     public Store createStore(User owner, String name, String description) {
         String slug = uniqueSlug(name);
 
@@ -63,6 +66,7 @@ public class StoreService {
     }
 
 
+    @Cacheable(value = "stores", key = "'owner:' + #userId")
     public Optional<Long> findActiveStoreIdForOwner(Long userId) {
         return storeRepository.findByOwnerIdAndStatus(userId, StoreStatus.ACTIVE)
                 .map(Store::getId);
@@ -103,6 +107,7 @@ public class StoreService {
     }
 
 
+    @Cacheable(value = "stores", key = "'settings:' + #user.id")
     public StoreSettings getSettingsForCurrentTenant(User user) {
         Store store = getCurrentTenantStore(user);
         return findOrCreateSettings(store.getId());
@@ -124,6 +129,7 @@ public class StoreService {
     }
 
 
+    @CacheEvict(value = "stores", key = "'settings:' + #user.id")
     public StoreSettings updateSettingsForCurrentTenant(User user, StoreSettingsUpdate update) {
         Store store = getCurrentTenantStore(user);
         StoreSettings settings = storeSettingsRepository.findByStoreId(store.getId())
@@ -155,6 +161,7 @@ public class StoreService {
     }
 
 
+    @Cacheable(value = "stores", key = "'list:' + (#status != null ? #status : 'all')")
     public List<Store> listStores(String status) {
         if (status != null && !status.isBlank()) {
             try {

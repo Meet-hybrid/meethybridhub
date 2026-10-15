@@ -2,6 +2,8 @@ package com.meethybridhub.payments;
 
 import com.meethybridhub.common.exception.BadRequestException;
 import com.meethybridhub.common.exception.ResourceNotFoundException;
+import com.meethybridhub.identity.AuditEventType;
+import com.meethybridhub.identity.AuditLogService;
 import com.meethybridhub.identity.User;
 import com.meethybridhub.orders.Order;
 import com.meethybridhub.orders.OrderRepository;
@@ -19,11 +21,14 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final OrderService orderService;
     private final OrderRepository orderRepository;
+    private final AuditLogService auditLogService;
 
-    public PaymentService(PaymentRepository paymentRepository, OrderService orderService, OrderRepository orderRepository) {
+    public PaymentService(PaymentRepository paymentRepository, OrderService orderService,
+                          OrderRepository orderRepository, AuditLogService auditLogService) {
         this.paymentRepository = paymentRepository;
         this.orderService = orderService;
         this.orderRepository = orderRepository;
+        this.auditLogService = auditLogService;
     }
 
     public Payment initialize(Long storeId, Long orderId, User requester,
@@ -58,6 +63,19 @@ public class PaymentService {
 
     public Payment applyWebhook(Long storeId, String transactionId, String status,
                                 BigDecimal amount, String rawPayload) {
+        try {
+            return processWebhook(storeId, transactionId, status, amount, rawPayload);
+        } catch (RuntimeException e) {
+            auditLogService.record(null, AuditEventType.PAYMENT_WEBHOOK_REJECTED,
+                    "Rejected payment webhook for transaction " + transactionId
+                            + " (status=" + status + ", amount=" + amount + "): " + e.getMessage(),
+                    null, null);
+            throw e;
+        }
+    }
+
+    private Payment processWebhook(Long storeId, String transactionId, String status,
+                                   BigDecimal amount, String rawPayload) {
         Payment payment = paymentRepository.findByStoreIdAndTransactionId(storeId, transactionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found for transaction: " + transactionId));
         if (payment.getAmount().compareTo(amount) != 0) {
@@ -69,6 +87,23 @@ public class PaymentService {
             case "refunded" -> PaymentStatus.REFUNDED;
             default -> throw new BadRequestException("Unsupported payment webhook status: " + status);
         };
+
+        // Terminal-state guard: webhooks can be replayed or arrive out of order.
+        if (payment.getStatus() == next) {
+            // Same-status replay (e.g. duplicate success) is a no-op: no re-save, no order churn.
+            return payment;
+        }
+        if (payment.getStatus() == PaymentStatus.PAID && next == PaymentStatus.FAILED) {
+            throw new BadRequestException("Cannot move settled payment from PAID to FAILED");
+        }
+        if (payment.getStatus() == PaymentStatus.REFUNDED) {
+            throw new BadRequestException("Payment is already refunded; no further status changes are allowed");
+        }
+        if (next == PaymentStatus.REFUNDED) {
+            if (payment.getStatus() != PaymentStatus.PAID) {
+                throw new BadRequestException("Cannot refund a payment that is not PAID");
+            }
+        }
 
         payment.setStatus(next);
         payment.setGatewayResponse(rawPayload);

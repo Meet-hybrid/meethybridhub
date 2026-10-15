@@ -2,6 +2,7 @@ package com.meethybridhub.orders;
 
 import com.meethybridhub.catalog.*;
 import com.meethybridhub.common.exception.BadRequestException;
+import com.meethybridhub.common.exception.ForbiddenException;
 import com.meethybridhub.identity.User;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,6 +19,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -65,6 +67,91 @@ class OrderServiceTest {
         assertThat(service().get(7L, 1L, customer())).isSameAs(order);
         assertThat(service().list(7L, owner(), PageRequest.of(0, 10)).getContent()).containsExactly(order);
         assertThat(service().cancel(7L, 1L, owner()).getStatus()).isEqualTo(OrderStatus.CANCELLED);
+    }
+
+    @Test
+    void updateStatusChangesOrderStatus() {
+        Order order = order(OrderStatus.PENDING);
+        when(orders.findByIdAndStoreId(1L, 7L)).thenReturn(Optional.of(order));
+        when(orders.save(order)).thenReturn(order);
+
+        Order result = service().updateStatus(7L, 1L, owner(), OrderStatus.SHIPPED);
+
+        assertThat(result.getStatus()).isEqualTo(OrderStatus.SHIPPED);
+    }
+
+    @Test
+    void updateStatusRejectsNonStaff() {
+        assertThatThrownBy(() -> service().updateStatus(7L, 1L, customer(), OrderStatus.SHIPPED))
+                .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    void cancelRejectsNonPendingOrders() {
+        Order order = order(OrderStatus.SHIPPED);
+        when(orders.findByIdAndStoreId(1L, 7L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> service().cancel(7L, 1L, owner()))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("cannot be cancelled");
+    }
+
+    @Test
+    void listByCustomerFiltersByCustomerId() {
+        User cust = customer();
+        when(orders.findAllByStoreIdAndCustomerId(eq(7L), eq(3L), any())).thenReturn(new PageImpl<>(List.of()));
+
+        service().list(7L, cust, PageRequest.of(0, 10));
+
+        verify(orders).findAllByStoreIdAndCustomerId(7L, 3L, PageRequest.of(0, 10));
+    }
+
+    @Test
+    void createRejectsInsufficientInventory() {
+        Product product = new Product(7L, "Shoe", null, new BigDecimal("25.00"), null);
+        ReflectionTestUtils.setField(product, "id", 10L);
+        ProductVariant variant = new ProductVariant(7L, product, "SKU-1", "42", "Black", null);
+        ReflectionTestUtils.setField(variant, "id", 11L);
+        Inventory stock = new Inventory(7L, variant, 1);
+        when(variants.findByIdAndStoreId(11L, 7L)).thenReturn(Optional.of(variant));
+        when(inventory.findByStoreIdAndVariantId(7L, 11L)).thenReturn(Optional.of(stock));
+
+        assertThatThrownBy(() -> service().create(7L, customer(), "a@b.com", "addr", null, null,
+                List.of(new OrderService.LineRequest(11L, 5))))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("Insufficient inventory");
+    }
+
+    @Test
+    void createRejectsInactiveVariant() {
+        Product product = new Product(7L, "Shoe", null, new BigDecimal("25.00"), null);
+        ReflectionTestUtils.setField(product, "id", 10L);
+        product.setActive(false);
+        ProductVariant variant = new ProductVariant(7L, product, "SKU-1", "42", "Black", null);
+        ReflectionTestUtils.setField(variant, "id", 11L);
+        when(variants.findByIdAndStoreId(11L, 7L)).thenReturn(Optional.of(variant));
+
+        assertThatThrownBy(() -> service().create(7L, customer(), "a@b.com", "addr", null, null,
+                List.of(new OrderService.LineRequest(11L, 1))))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("not available");
+    }
+
+    @Test
+    void createUsesPriceOverrideWhenPresent() {
+        Product product = new Product(7L, "Shoe", null, new BigDecimal("25.00"), null);
+        ReflectionTestUtils.setField(product, "id", 10L);
+        ProductVariant variant = new ProductVariant(7L, product, "SKU-1", "42", "Black", new BigDecimal("30.00"));
+        ReflectionTestUtils.setField(variant, "id", 11L);
+        Inventory stock = new Inventory(7L, variant, 10);
+        when(variants.findByIdAndStoreId(11L, 7L)).thenReturn(Optional.of(variant));
+        when(inventory.findByStoreIdAndVariantId(7L, 11L)).thenReturn(Optional.of(stock));
+        when(orders.save(any(Order.class))).thenAnswer(i -> i.getArgument(0));
+
+        Order result = service().create(7L, customer(), "a@b.com", "addr", null, null,
+                List.of(new OrderService.LineRequest(11L, 2)));
+
+        assertThat(result.getTotalAmount()).isEqualByComparingTo("60.00");
     }
 
     private OrderService service() { return new OrderService(orders, variants, inventory); }

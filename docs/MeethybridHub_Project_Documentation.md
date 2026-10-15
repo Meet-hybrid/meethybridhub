@@ -139,7 +139,7 @@ The project uses **"package by feature"** rather than traditional "package by la
 # 1. Start PostgreSQL container
 docker run -d --name meethybridhub-db \
   -e POSTGRES_DB=meethybridhub -e POSTGRES_PASSWORD=postgres \
-  -p 5432:5432 postgres:16
+  -p 5433:5432 postgres:16
 
 # 2. Run the application
 ./mvnw spring-boot:run
@@ -164,7 +164,7 @@ For development machines without root access:
 Environment variables (with defaults in `application.yml`):
 ```bash
 # Database connection
-DB_URL=jdbc:postgresql://localhost:5432/meethybridhub
+DB_URL=jdbc:postgresql://localhost:5433/meethybridhub
 DB_USERNAME=postgres
 DB_PASSWORD=postgres
 

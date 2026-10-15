@@ -35,7 +35,7 @@ Prerequisites:
 # 1. Start Postgres (Docker) — or use your own local instance
 docker run -d --name meethybridhub-db \
   -e POSTGRES_DB=meethybridhub -e POSTGRES_PASSWORD=postgres \
-  -p 5432:5432 postgres:16
+  -p 5433:5432 postgres:16
 
 # 2. Run the API (first run downloads the pinned Maven version;
 #    Flyway applies the db/migration scripts on startup)
@@ -64,14 +64,14 @@ This dev machine has no `sudo`, so PostgreSQL 16 was installed rootlessly by
 A helper script manages the single-user cluster:
 
 ```bash
-./scripts/db.sh start    # initdb on first run, then start on :5432
+./scripts/db.sh start    # initdb on first run, then start on :5433
 ./scripts/db.sh status
 ./scripts/db.sh psql     # interactive psql (user: postgres / password: postgres)
 ./scripts/db.sh stop
 ```
 
 The cluster lives in `~/pgdata`, the server log in `~/pgdata/server.log`, and the
-app connects with the `application.yml` defaults (`jdbc:postgresql://localhost:5432/meethybridhub`,
+app connects with the `application.yml` defaults (`jdbc:postgresql://localhost:5433/meethybridhub`,
 user `postgres` / password `postgres`). The `meethybridhub` database is created
 automatically on first `start`. Dev-only credentials; production secrets come
 from env vars (`DB_URL`, `DB_USERNAME`, `DB_PASSWORD`).
@@ -243,7 +243,7 @@ default (see `application.yml` and `.env.example`):
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` | `localhost:5432/meethybridhub`, `postgres`/`postgres` | PostgreSQL connection |
+| `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` | `localhost:5433/meethybridhub`, `postgres`/`postgres` | PostgreSQL connection |
 | `PORT` | `8080` | Server port |
 | `JWT_SECRET` | dev placeholder (⚠️ change in prod) | HMAC secret, ≥ 32 bytes |
 | `JWT_ACCESS_EXPIRATION` / `JWT_REFRESH_EXPIRATION` | `24` h / `30` d | Token lifetimes |
