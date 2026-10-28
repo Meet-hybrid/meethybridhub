@@ -253,7 +253,25 @@ default (see `application.yml` and `.env.example`):
 | `AUTH_MAX_EMAILS_PER_EMAIL` / `AUTH_MAX_EMAILS_PER_IP` | `3` / `10` | Email-flood limits |
 | `MAIL_*` | Gmail SMTP defaults | Email sending |
 
-## Deploying the frontends (Vercel)
+## Deploying
+
+Production runs the API and its database on **Render** and the two Next.js apps
+on **Vercel**. Full runbook (order of operations, env vars, bootstrap SQL,
+verification and troubleshooting): **[docs/deploy-render-vercel.md](docs/deploy-render-vercel.md)**.
+
+| Piece | Host | Config |
+|---|---|---|
+| API (Docker) + PostgreSQL 16 | Render | `render.yaml` |
+| Storefront + dashboard | Vercel | `vercel.json` |
+
+Deploy Vercel first (its origin goes into the API's `CORS_ALLOWED_ORIGINS`), then
+`render.yaml` as a Render Blueprint, then set `NEXT_PUBLIC_API_URL` in Vercel to
+the Render URL and redeploy — that value is inlined at build time. The API reads
+`DB_URL` when set, otherwise composes the JDBC URL from `DB_HOST` / `DB_PORT` /
+`DB_NAME` (Render exposes those separately, and its `postgres://` string is not a
+JDBC URL).
+
+### Deploying the frontends (Vercel)
 
 `vercel.json` deploys the two Next.js apps as one Vercel project with two services:
 

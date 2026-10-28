@@ -9,7 +9,11 @@ spring:
     name: meethybridhub
 
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5433/meethybridhub}
+    # DB_URL wins when set. Otherwise the JDBC URL is assembled from the discrete
+    # DB_HOST / DB_PORT / DB_NAME values — hosted providers (Render, Heroku, …)
+    # inject host/port/name separately, and their connection string is a
+    # `postgres://…` URL that the PostgreSQL JDBC driver cannot consume.
+    url: ${DB_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:meethybridhub}}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
 
@@ -130,8 +134,10 @@ payment:
   webhook-secret: ${PAYMENT_WEBHOOK_SECRET:dev-webhook-secret}
 
 # Public base URL used to build verification links in emails.
+# RENDER_EXTERNAL_URL is set automatically by Render, so a deploy there needs no
+# APP_BASE_URL; set APP_BASE_URL when the API is reached through a custom domain.
 app:
-  base-url: ${APP_BASE_URL:http://localhost:8080}
+  base-url: ${APP_BASE_URL:${RENDER_EXTERNAL_URL:http://localhost:8080}}
   # Deployment environment. Set APP_ENV=prod in production: this activates
   # StartupSecretsValidator, which refuses to boot with missing or default-valued
   # secrets (JWT_SECRET, PAYMENT_WEBHOOK_SECRET, DB_PASSWORD).
