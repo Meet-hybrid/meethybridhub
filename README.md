@@ -253,6 +253,48 @@ default (see `application.yml` and `.env.example`):
 | `AUTH_MAX_EMAILS_PER_EMAIL` / `AUTH_MAX_EMAILS_PER_IP` | `3` / `10` | Email-flood limits |
 | `MAIL_*` | Gmail SMTP defaults | Email sending |
 
+## Deploying
+
+Production runs the API and its database on **Render** and the two Next.js apps
+on **Vercel**. Full runbook (order of operations, env vars, bootstrap SQL,
+verification and troubleshooting): **[docs/deploy-render-vercel.md](docs/deploy-render-vercel.md)**.
+
+| Piece | Host | Config |
+|---|---|---|
+| API (Docker) + PostgreSQL 16 | Render | `render.yaml` |
+| Storefront + dashboard | Vercel | `vercel.json` |
+
+Deploy Vercel first (its origin goes into the API's `CORS_ALLOWED_ORIGINS`), then
+`render.yaml` as a Render Blueprint, then set `NEXT_PUBLIC_API_URL` in Vercel to
+the Render URL and redeploy — that value is inlined at build time. The API reads
+`DB_URL` when set, otherwise composes the JDBC URL from `DB_HOST` / `DB_PORT` /
+`DB_NAME` (Render exposes those separately, and its `postgres://` string is not a
+JDBC URL).
+
+### Deploying the frontends (Vercel)
+
+`vercel.json` deploys the two Next.js apps as one Vercel project with two services:
+
+| Service | Directory | Public path |
+|---|---|---|
+| `storefront` | `storefront/` | `/` (everything not under `/dashboard`) |
+| `dashboard` | `dashboard/` | `/dashboard` (Next.js `basePath`) |
+
+Neither app calls the other, so there are no service bindings. Both call this
+Spring Boot API from the browser. The API itself (with PostgreSQL and Redis)
+does not run on Vercel; host it separately, then set:
+
+- In Vercel, for both services: `NEXT_PUBLIC_API_URL` = the API's public URL
+  (it is inlined at build time, so redeploy after changing it). The storefront
+  also reads `NEXT_PUBLIC_STORE_SLUG` and `NEXT_PUBLIC_PAYMENTS_ENABLED`, and the
+  dashboard `NEXT_PUBLIC_STORE_SLUG`.
+- On the API: `CORS_ALLOWED_ORIGINS` = the Vercel domain (e.g.
+  `https://meethybridhub.vercel.app`). Both apps share that one origin.
+
+Run `vercel dev` from the repository root to serve both services together
+locally. Running the dashboard on its own (`npm run dev` in `dashboard/`)
+serves it under `/dashboard` as well.
+
 ## CI/CD
 
 GitHub Actions (`.github/workflows/ci.yml`) runs on every push to `main` and every

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import AdminSidebar from "@/components/AdminSidebar";
@@ -39,12 +40,12 @@ function AdminInner({ children }: { children: React.ReactNode }) {
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">Access Denied</h2>
           <p className="text-gray-500 text-sm mb-4">You don&apos;t have admin privileges.</p>
-          <a
+          <Link
             href="/admin"
             className="inline-block px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700"
           >
             Go to Admin Dashboard
-          </a>
+          </Link>
         </div>
       </div>
     );

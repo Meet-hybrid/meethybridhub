@@ -1,4 +1,5 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+// Trailing slash stripped: requests append paths that already start with `/`.
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(/\/+$/, "");
 
 export interface AuthTokens {
   accessToken: string;

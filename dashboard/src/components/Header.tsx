@@ -9,7 +9,8 @@ export default function Header({ storeName }: { storeName?: string }) {
 
   const handleLogout = () => {
     api.setToken(null);
-    window.location.href = "/login";
+    // Full-page navigation bypasses the router, so add the base path here.
+    window.location.href = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/login`;
   };
 
   return (
