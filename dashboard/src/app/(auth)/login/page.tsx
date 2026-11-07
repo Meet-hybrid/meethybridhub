@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Store, Eye, EyeOff } from "lucide-react";
-import { api } from "@/lib/api";
+import { api, getStoreBrandName } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,6 +13,11 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [brandName, setBrandName] = useState("Store");
+
+  useEffect(() => {
+    setBrandName(getStoreBrandName());
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +43,7 @@ export default function LoginPage() {
             <Store className="w-7 h-7 text-white" />
           </div>
         </div>
-        <p className="mt-8 text-center text-[11px] tracking-[0.2em] uppercase text-[#9d8b7b]">DivinezSignature Admin</p>
+        <p className="mt-8 text-center text-[11px] tracking-[0.2em] uppercase text-[#9d8b7b]">{brandName} Admin</p>
         <h2 className="mt-3 text-center text-3xl font-bold text-[#f7f1e8]">
           Sign in to your dashboard
         </h2>

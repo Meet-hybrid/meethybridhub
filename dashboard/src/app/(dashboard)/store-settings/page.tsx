@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Upload, Save, Check } from "lucide-react";
-import { api } from "@/lib/api";
+import { api, resolveStoreSlug } from "@/lib/api";
 
 export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
@@ -49,16 +49,28 @@ export default function SettingsPage() {
           }));
         }
       } catch {
-
-        setForm({
-          storeName: "Divine'zSignatures",
-          tagline: "Handcrafted Bead Accessories — Bags, Bracelets, Necklaces & More",
-          primaryColor: "#b45309",
-          accentColor: "#d97706",
-          theme: "light",
-          contactEmail: "hello@divinezsignatures.com",
-          subdomain: "divinezsignatures",
-        });
+        const isDivinez = resolveStoreSlug() === "divinez-signature";
+        setForm(
+          isDivinez
+            ? {
+                storeName: "DivinezSignature",
+                tagline: "Handcrafted Bead Accessories — Bags, Bracelets, Necklaces & More",
+                primaryColor: "#0B4A2B",
+                accentColor: "#d97706",
+                theme: "light",
+                contactEmail: "hello@divinezsignatures.com",
+                subdomain: "divinez-signature",
+              }
+            : {
+                storeName: "MeethybridHub",
+                tagline: "Clothing and footwear with a quiet point of view",
+                primaryColor: "#241914",
+                accentColor: "#c28a58",
+                theme: "dark",
+                contactEmail: "hello@meethybridhub.com",
+                subdomain: "meethybridhub",
+              }
+        );
       } finally {
         setLoading(false);
       }

@@ -1,6 +1,27 @@
 // Trailing slash stripped: requests append paths that already start with `/`.
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(/\/+$/, "");
-const STORE_SLUG = process.env.NEXT_PUBLIC_STORE_SLUG || "divinez-signature";
+const DEFAULT_STORE_SLUG = process.env.NEXT_PUBLIC_STORE_SLUG || "meethybridhub";
+
+export function resolveStoreSlug(host?: string): string {
+  const hostname = (
+    host ?? (typeof window !== "undefined" ? window.location.hostname : "")
+  )
+    .split(":")[0]
+    .toLowerCase();
+  if (hostname.includes("divinezsignature") || hostname.includes("divinez-signature")) {
+    return "divinez-signature";
+  }
+  if (hostname.includes("meethybridhub")) {
+    return "meethybridhub";
+  }
+  return DEFAULT_STORE_SLUG;
+}
+
+export function getStoreBrandName(host?: string): string {
+  return resolveStoreSlug(host) === "divinez-signature"
+    ? "DivinezSignature"
+    : "MeethybridHub";
+}
 
 class ApiClient {
   private token: string | null = null;
@@ -26,7 +47,7 @@ class ApiClient {
     const token = this.getToken();
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      "X-Store-Slug": STORE_SLUG,
+      "X-Store-Slug": resolveStoreSlug(),
       ...((options.headers as Record<string, string>) || {}),
     };
     if (token) headers["Authorization"] = `Bearer ${token}`;

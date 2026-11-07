@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Plus, Pencil, Trash2, X } from "lucide-react";
 import DataTable, { StatusBadge } from "@/components/DataTable";
-import { api } from "@/lib/api";
+import { api, resolveStoreSlug } from "@/lib/api";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -28,14 +28,24 @@ export default function ProductsPage() {
         }))
       );
     } catch {
-
-      setProducts([
-        { id: 1, name: "Classic Ankara Gown", category: "Dresses", price: 25000, stock: 45, status: "PUBLISHED" },
-        { id: 2, name: "Mens Agbada Set", category: "Traditional", price: 45000, stock: 12, status: "PUBLISHED" },
-        { id: 3, name: "Kids Birthday Outfit", category: "Kids", price: 15000, stock: 30, status: "DRAFT" },
-        { id: 4, name: "Wedding Guest Dress", category: "Dresses", price: 35000, stock: 8, status: "PUBLISHED" },
-        { id: 5, name: "Casual Denim Jacket", category: "Outerwear", price: 18000, stock: 0, status: "ARCHIVED" },
-      ]);
+      const isDivinez = resolveStoreSlug() === "divinez-signature";
+      setProducts(
+        isDivinez
+          ? [
+              { id: 1, name: "Crystal Charm Bracelet", category: "Bracelets", price: 8500, stock: 25, status: "PUBLISHED" },
+              { id: 2, name: "Pearl Layered Necklace", category: "Necklaces", price: 15000, stock: 12, status: "PUBLISHED" },
+              { id: 3, name: "Gold Waist Bead Set", category: "Waist Beads", price: 12000, stock: 30, status: "PUBLISHED" },
+              { id: 4, name: "Beaded Evening Bag", category: "Bags", price: 28000, stock: 8, status: "PUBLISHED" },
+              { id: 5, name: "Natural Stone Anklet", category: "Anklets", price: 9000, stock: 18, status: "DRAFT" },
+            ]
+          : [
+              { id: 1, name: "The Relaxed Overshirt", category: "Clothing", price: 42000, stock: 18, status: "PUBLISHED" },
+              { id: 2, name: "Low-Top Leather Sneaker", category: "Sneakers", price: 68000, stock: 12, status: "PUBLISHED" },
+              { id: 3, name: "Wide Leg Trouser", category: "Clothing", price: 38000, stock: 24, status: "PUBLISHED" },
+              { id: 4, name: "Canvas Court Shoe", category: "Shoes", price: 32000, stock: 15, status: "PUBLISHED" },
+              { id: 5, name: "Heavyweight Everyday Tee", category: "Essentials", price: 18000, stock: 40, status: "DRAFT" },
+            ]
+      );
     } finally {
       setLoading(false);
     }
