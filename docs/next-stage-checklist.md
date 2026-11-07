@@ -77,18 +77,18 @@ For each store:
 
 ## 6. Implementation work
 
-- [ ] Create the two store records with unique shop IDs
-- [ ] Add categories, products, variants, images, and inventory
-- [ ] Connect public catalog APIs
-- [ ] Connect the store-aware cart
-- [ ] Connect customer registration and login
-- [ ] Connect checkout and full payment
-- [ ] Connect installment plans and payment schedules
-- [ ] Connect order confirmation and order tracking
-- [ ] Connect customer account and order history
-- [ ] Connect reviews, favorites, and custom orders
-- [ ] Correct and verify dashboard API routes
-- [ ] Verify that one store cannot access another store's data
+- [ ] Create the two store records with unique shop IDs in the production DB (`meethybridhub` and `divinez-signature`)
+- [ ] Add real categories, products, variants, images, and inventory to production DB
+- [x] Connect public catalog APIs (`/api/v1/public/stores/{slug}/...`)
+- [x] Connect the store-aware cart
+- [x] Connect customer registration and login
+- [x] Connect checkout and full payment
+- [x] Connect installment plans and payment schedules
+- [x] Connect order confirmation and order tracking
+- [x] Connect customer account and order history
+- [x] Connect reviews, favorites, and custom orders
+- [x] Correct and verify dashboard API routes and hostname-based multi-store resolution
+- [x] Verify that one store cannot access another store's data
 
 ## 7. Local development setup
 

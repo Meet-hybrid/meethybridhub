@@ -26,18 +26,17 @@ MeethybridHub is a **production-ready multi-tenant e-commerce SaaS platform** de
 | API Documentation | SpringDoc OpenAPI | 2.8.17 | Swagger UI integration |
 | Build Tool | Maven Wrapper | 3.9.11 | Consistent build environment |
 
-### Planned Integrations
-- **Authentication**: JWT (Phase 2)
-- **Payments**: Korapay (Phase 5)
-- **Media Storage**: Cloudinary (Phase 6)
-- **Caching**: Redis (Phase 9)
-- **Queues**: Message broker (Phase 9)
+### Frontend & Deployment
+- **Storefront (`storefront/`)**: Next.js 15 / React 19 / Tailwind CSS 4 customer storefront with automatic hostname-based multi-store theming (`meethybridhub` and `divinez-signature`)
+- **Dashboard (`dashboard/`)**: Next.js 15 / React 19 / Tailwind CSS 4 store-owner & platform-admin dashboard served under `/dashboard`
+- **Caching & Events**: Redis with automatic `ConcurrentMapCacheManager` fallback (`RedisConfig`, `FallbackCacheConfig`) + Spring async domain events
+- **Hosting**: Render Blueprint (`render.yaml`) for Dockerized API + PostgreSQL 16; Vercel Services (`vercel.json`) for `storefront` and `dashboard`
 
 ### Development & Operations
-- **CI/CD**: GitHub Actions
+- **CI/CD**: GitHub Actions (`.github/workflows/ci.yml`) with JaCoCo coverage enforcement & Codecov
 - **Testing**: JUnit 5, MockMvc, H2 (Testcontainers for PostgreSQL-specific features)
-- **Monitoring**: Spring Boot Actuator
-- **Containerization**: Docker (Phase 10)
+- **Monitoring**: Spring Boot Actuator (`/actuator/health`, `/actuator/metrics`, `/actuator/prometheus`)
+- **Containerization**: Multi-stage `Dockerfile` + `docker-compose.yml`
 
 ---
 
@@ -48,29 +47,36 @@ MeethybridHub is a **production-ready multi-tenant e-commerce SaaS platform** de
 meethybridhub/
 ├── src/main/java/com/meethybridhub/
 │   ├── MeethybridHubApplication.java          # Application entry point
-│   ├── config/                                # Configuration classes
-│   │   ├── SecurityConfig.java                # Security configuration
-│   │   └── OpenApiConfig.java                 # OpenAPI/Swagger configuration
-│   ├── common/                                # Shared utilities
-│   │   ├── api/                               # API-related common code
-│   │   │   ├── ApiError.java                  # Uniform error envelope
-│   │   │   └── GlobalExceptionHandler.java    # Global exception handler
-│   │   └── exception/                         # Domain exceptions
-│   │       ├── BadRequestException.java       # HTTP 400 exceptions
-│   │       └── ResourceNotFoundException.java # HTTP 404 exceptions
-│   └── api/                                   # Feature-based API packages
-│       └── ping/                              # Ping feature
-│           └── PingController.java            # Smoke test endpoint
+│   ├── config/                                # Security, OpenAPI, JPA auditing, Redis/fallback cache,
+│   │                                          # async events, scheduling, StartupSecretsValidator
+│   ├── common/                                # ApiError, GlobalExceptionHandler, domain exceptions
+│   ├── api/ping/                              # PingController smoke-test endpoint
+│   ├── identity/                              # Users, JWT auth, email verification, password reset,
+│   │                                          # RBAC, rate limiting, audit_log, revoked_tokens
+│   ├── store/                                 # Multi-tenancy: Store, StoreDomain, StoreSettings,
+│   │                                          # StoreFilter, TenantContext, AdminStoreController
+│   ├── catalog/                               # Category, Product, ProductVariant, Inventory,
+│   │                                          # PublicCatalogController
+│   ├── orders/                                # Order, OrderItem, OrderService, OrderController
+│   ├── payments/                              # Payment, InstallmentPlan, InstallmentPayment,
+│   │                                          # PaymentController, InstallmentController
+│   ├── customorders/                          # CustomOrderRequest, Quote, CustomOrderConversation,
+│   │                                          # CustomOrderAttachment, CustomOrderController
+│   ├── discovery/                             # StoreReview, ProductReview, UserFavorite,
+│   │                                          # FeaturedContent, DiscoveryController
+│   ├── admin/                                 # AdminAnalyticsController, StoreAnalyticsController,
+│   │                                          # CommissionRule/Entry, Dispute, PlatformConfig
+│   └── billing/                               # Dormant flat-fee platform charge module
 ├── src/main/resources/
 │   ├── application.yml                        # Main configuration
 │   ├── application-test.yml                   # Test profile configuration
-│   └── db/migration/                          # Flyway migrations
-├── src/test/java/com/meethybridhub/          # Test classes
-├── scripts/                                  # Development scripts
-│   └── db.sh                                 # PostgreSQL management script
-├── .github/workflows/                        # CI/CD pipelines
-│   └── ci.yml                                # GitHub Actions workflow
-├── .mvn/wrapper/                             # Maven wrapper configuration
+│   └── db/migration/                          # Flyway migrations (V2–V18)
+├── storefront/                                # Next.js 15 multi-store customer storefront
+├── dashboard/                                 # Next.js 15 store-owner & admin dashboard
+├── src/test/java/com/meethybridhub/          # Unit + integration test suites
+├── scripts/                                  # Development scripts (db.sh)
+├── Dockerfile & docker-compose.yml           # Containerization
+├── render.yaml & vercel.json                 # Production deployment blueprints
 ├── pom.xml                                   # Maven dependencies
 └── README.md                                 # Project overview
 ```
