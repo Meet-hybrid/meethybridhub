@@ -54,7 +54,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     api.setToken(null);
     setUser(null);
-    window.location.href = "/login";
+    // Full-page navigation bypasses the router, so add the base path here.
+    window.location.href = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/login`;
   };
 
   return (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   Store,
   Users,
@@ -243,9 +244,9 @@ export default function AdminOverviewPage() {
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold text-gray-900">Recent Stores</h3>
-          <a href="/admin/stores" className="text-sm text-red-600 hover:text-red-500 font-medium">
+          <Link href="/admin/stores" className="text-sm text-red-600 hover:text-red-500 font-medium">
             View all →
-          </a>
+          </Link>
         </div>
         {loading ? (
           <div className="flex items-center justify-center py-8">

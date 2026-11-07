@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { Bell, Store, AlertTriangle, CheckCircle } from "lucide-react";
 import { api } from "@/lib/api";
@@ -229,13 +230,13 @@ export default function NotificationBell() {
           </div>
 
           <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50">
-            <a
+            <Link
               href="/admin/notifications"
               onClick={() => setOpen(false)}
               className="block text-center text-xs font-medium text-indigo-600 hover:text-indigo-500"
             >
               View all notifications →
-            </a>
+            </Link>
           </div>
         </div>
       )}

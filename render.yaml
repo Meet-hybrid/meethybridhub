@@ -1,0 +1,125 @@
+# ============================================================================
+# Render Blueprint — MeethybridHub API + PostgreSQL
+#
+# The two Next.js apps (storefront, dashboard) deploy to Vercel using
+# vercel.json; this file provisions only the Spring Boot API and its database.
+#
+#   Render Dashboard → New → Blueprint → select this repo → Apply
+#
+# Step-by-step runbook (including the Vercel side and the CORS domain):
+# docs/deploy-render-vercel.md
+#
+# Notes:
+# - Render does NOT interpolate variables inside Blueprint values, so the JDBC
+#   URL is assembled by the app from DB_HOST/DB_PORT/DB_NAME (application.yml).
+#   A Render Postgres connection string is `postgres://…`, which the PostgreSQL
+#   JDBC driver cannot use as-is.
+# - Flyway applies src/main/resources/db/migration on every boot, so the schema
+#   is created on the first deploy and migrated in-place afterwards.
+# - Free instances sleep after ~15 minutes idle; the next request pays a
+#   cold start (roughly 30–60s for a Spring Boot app). Upgrade `plan` to
+#   `starter` if that matters, or point an uptime pinger at /actuator/health.
+# ============================================================================
+
+services:
+  - type: web
+    name: meethybridhub-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    region: oregon
+    healthCheckPath: /actuator/health
+    autoDeployTrigger: commit
+    # Only rebuild for files that can change the API image; the Next.js apps
+    # live in this repo but ship through Vercel.
+    buildFilter:
+      paths:
+        - Dockerfile
+        - .dockerignore
+        - pom.xml
+        - .mvn/**
+        - mvnw
+        - mvnw.cmd
+        - src/**
+    envVars:
+      # --- Runtime mode -------------------------------------------------------
+      # APP_ENV=prod activates StartupSecretsValidator, which refuses to boot
+      # when JWT_SECRET / PAYMENT_WEBHOOK_SECRET / DB_PASSWORD are missing or
+      # still at their committed dev defaults.
+      - key: APP_ENV
+        value: prod
+
+      # --- Secrets (generated once by Render, stable across deploys) ----------
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PAYMENT_WEBHOOK_SECRET
+        generateValue: true
+
+      # --- PostgreSQL ---------------------------------------------------------
+      - key: DB_HOST
+        fromDatabase:
+          name: meethybridhub-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: meethybridhub-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: meethybridhub-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: meethybridhub-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: meethybridhub-db
+          property: password
+
+      # --- Frontend / CORS ----------------------------------------------------
+      # Prompted for on first Blueprint sync: enter the Vercel production URL,
+      # e.g. https://meethybridhub.vercel.app (comma-separate several origins).
+      # Without it the browser calls from Vercel are blocked by CORS.
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      # Verification/reset links in emails. Falls back to Render's own public
+      # URL (RENDER_EXTERNAL_URL) when unset — see application.yml.
+      - key: APP_BASE_URL
+        sync: false
+
+      # --- Tenant resolution --------------------------------------------------
+      # Subdomain → store slug. Leave at the default until wildcard DNS is
+      # pointed at the frontend.
+      - key: STORE_BASE_DOMAIN
+        value: meethybridhub.com
+
+      # --- Behavior behind Render's proxy -------------------------------------
+      # Render terminates TLS and forwards X-Forwarded-For. Trust it so login
+      # rate limiting and the audit log see real client IPs.
+      - key: AUTH_TRUST_FORWARDED_HEADER
+        value: "true"
+
+      # --- JVM ----------------------------------------------------------------
+      # The container limit is the JVM's ceiling; ExitOnOutOfMemoryError turns a
+      # leak into a fast restart instead of a hung instance.
+      - key: JAVA_TOOL_OPTIONS
+        value: -XX:MaxRAMPercentage=75.0 -XX:+ExitOnOutOfMemoryError
+
+      # --- Email (optional) ---------------------------------------------------
+      # Leave blank to deploy without outbound mail; registration still works,
+      # only the verification email is skipped/fails. Gmail needs an app
+      # password, not the account password.
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+
+databases:
+  - name: meethybridhub-db
+    databaseName: meethybridhub
+    user: meethybridhub
+    plan: free
+    region: oregon
+    postgresMajorVersion: "16"

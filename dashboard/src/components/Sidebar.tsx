@@ -14,7 +14,8 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { api, getStoreBrandName } from "@/lib/api";
 
 const navItems = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
@@ -29,6 +30,17 @@ const navItems = [
 export default function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const [brandName, setBrandName] = useState("Store Dashboard");
+
+  useEffect(() => {
+    setBrandName(getStoreBrandName());
+    api
+      .getMyStore()
+      .then((store) => {
+        if (store?.name) setBrandName(store.name);
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <aside
@@ -38,7 +50,7 @@ export default function Sidebar() {
     >
       <div className="flex items-center gap-2 px-4 h-16 border-b border-gray-800">
         <Store className="w-6 h-6 text-indigo-400 shrink-0" />
-        {!collapsed && <span className="font-bold text-lg truncate">DivinezSignature</span>}
+        {!collapsed && <span className="font-bold text-lg truncate">{brandName}</span>}
       </div>
 
       <nav className="flex-1 py-4 space-y-1 px-2">

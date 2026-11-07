@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { DollarSign, ShoppingCart, Package, Users, Clock } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import StatsCard from "@/components/StatsCard";
@@ -173,13 +174,13 @@ export default function OverviewPage() {
               { label: "Review custom orders", href: "/custom-orders", color: "bg-emerald-50 text-emerald-700" },
               { label: "Update store branding", href: "/store-settings", color: "bg-purple-50 text-purple-700" },
             ].map((action) => (
-              <a
+              <Link
                 key={action.href}
                 href={action.href}
                 className={`block px-4 py-3 rounded-lg text-sm font-medium ${action.color} hover:opacity-80 transition-opacity`}
               >
                 {action.label}
-              </a>
+              </Link>
             ))}
           </div>
 
@@ -197,9 +198,9 @@ export default function OverviewPage() {
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold text-gray-900">Recent Orders</h3>
-          <a href="/orders" className="text-sm text-indigo-600 hover:text-indigo-500 font-medium">
+          <Link href="/orders" className="text-sm text-indigo-600 hover:text-indigo-500 font-medium">
             View all →
-          </a>
+          </Link>
         </div>
         <DataTable columns={orderColumns} data={orders} searchable={false} />
       </div>

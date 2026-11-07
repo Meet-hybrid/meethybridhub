@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   Bell,
@@ -266,12 +267,12 @@ export default function AdminNotificationsPage() {
                   </div>
                   <p className="text-sm text-gray-500 line-clamp-2">{notif.message}</p>
                   {notif.link && (
-                    <a
+                    <Link
                       href={notif.link}
                       className="inline-block mt-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-500"
                     >
                       View details →
-                    </a>
+                    </Link>
                   )}
                 </div>
                 {!notif.read && (
