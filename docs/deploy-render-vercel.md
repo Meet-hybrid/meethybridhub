@@ -38,12 +38,16 @@ mandatory, not optional.
    Both services share the project's environment variables. A build **fails on
    purpose** if `NEXT_PUBLIC_API_URL` is missing, instead of shipping a bundle
    that calls `http://localhost:8080`.
-4. Deploy. You get one domain serving:
+4. Deploy. You get one project serving:
 
    - `/` → storefront
    - `/dashboard` → dashboard (the dashboard app has `basePath: "/dashboard"`)
 
-   Confirm both loads, then note the domain — it is the CORS origin for the API.
+   **Multi-store URLs on one Vercel project:** Under **Project Settings → Domains**, assign two `.vercel.app` domains to this same project:
+   - `meethybridhub.vercel.app` → automatically serves **MeethybridHub** at `/` and `/dashboard`
+   - `divinez-signature.vercel.app` → automatically serves **DivinezSignature** at `/` and `/dashboard`
+
+   Both `storefront` and `dashboard` inspect the request hostname (`meethybridhub` vs `divinez-signature`) to switch branding, catalog, and the `X-Store-Slug` header automatically. Confirm both domains load, then note them — they are the CORS origins for the API.
 
 > **If Services is unavailable on your plan/region**, deploy two separate Vercel
 > projects instead: same repo, **Root Directory** `storefront` and `dashboard`.
@@ -69,7 +73,7 @@ mandatory, not optional.
    (`generateValue: true`); they stay stable across deploys.
 3. **Apply** and watch the build. The Dockerfile builds the jar with the Maven
    wrapper, then runs it as a non-root user. First boot: Flyway applies
-   `V2…V10`, Hibernate validates the schema (`ddl-auto: validate` — it refuses to
+   `V2…V18`, Hibernate validates the schema (`ddl-auto: validate` — it refuses to
    start on drift), and the service goes healthy once `/actuator/health` answers.
 4. Copy the service URL (`https://<service>.onrender.com`).
 
@@ -116,18 +120,24 @@ UPDATE users SET email_verified = TRUE, status = 'ACTIVE' WHERE email = 'you@exa
 curl -sX POST "$API/api/v1/auth/login" -H 'Content-Type: application/json' \
   -d '{"email":"you@example.com","password":"<strong-password>"}'
 
-# 4. Register the store (grants STORE_OWNER)
+# 4. Register the stores (grants STORE_OWNER)
+#    Use each store owner's accessToken so each owner owns their respective store:
 curl -sX POST "$API/api/v1/stores" -H 'Content-Type: application/json' \
-  -H "Authorization: Bearer <accessToken>" \
-  -d '{"name":"My Store","description":"First store"}'
-# → {"id":1,"name":"My Store","slug":"my-store",...}
+  -H "Authorization: Bearer <owner1AccessToken>" \
+  -d '{"name":"MeethybridHub","description":"Clothing and footwear in Lagos"}'
+# → {"id":1,"name":"MeethybridHub","slug":"meethybridhub",...}
+
+curl -sX POST "$API/api/v1/stores" -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer <owner2AccessToken>" \
+  -d '{"name":"Divinez Signature","description":"Handcrafted beadwork in Abuja"}'
+# → {"id":2,"name":"Divinez Signature","slug":"divinez-signature",...}
 ```
 
-The **slug is generated from the name** (lowercase, hyphenated, de-duplicated);
-it is not client-chosen. Set Vercel's `NEXT_PUBLIC_STORE_SLUG` to the returned
-value (e.g. `my-store`) and redeploy — the dashboard and storefront send it as
-`X-Store-Slug` to resolve the tenant. Without it the API answers
-`400 No store context`.
+The **slug is generated from the name** (lowercase, hyphenated, de-duplicated):
+`"MeethybridHub"` → `meethybridhub` and `"Divinez Signature"` → `divinez-signature`.
+Both the storefront and dashboard automatically send `X-Store-Slug` matching the
+hostname (`meethybridhub` or `divinez-signature`), falling back to
+`NEXT_PUBLIC_STORE_SLUG`.
 
 There is no self-service way to become `ADMIN` yet — roles are a
 comma-separated column. Promote the account from the same PSQL session:

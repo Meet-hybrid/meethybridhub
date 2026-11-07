@@ -13,16 +13,18 @@ feature.
 | Layer | Choice |
 |---|---|
 | Language | Java 21 |
-| Framework | Spring Boot 3.5.x (Spring MVC, Spring Security, Spring Data JPA) |
-| Database | PostgreSQL (schema owned by Flyway migrations) |
-| Auth | JWT (access + refresh), BCrypt, RBAC, rate limiting |
+| Backend Framework | Spring Boot 3.5.x (Spring MVC, Spring Security, Spring Data JPA) |
+| Frontend Apps | Next.js 15 / React 19 / Tailwind CSS 4 (`storefront/` and `dashboard/`) |
+| Database | PostgreSQL 16 (schema owned by Flyway migrations `V2`–`V18`) |
+| Caching & Events | Redis (with automatic in-memory `ConcurrentMapCacheManager` fallback) + Spring async events |
+| Auth | JWT (access + refresh), BCrypt, RBAC, rate limiting, server-side token revocation |
 | Docs | Swagger/OpenAPI (springdoc) |
-| Payments | Korapay (Phase 5) |
-| Media | Cloudinary (Phase 6) |
+| Payments | Full & installment payment engine + HMAC-SHA256 webhooks (Korapay integration ready) |
 | Build | Maven + Maven Wrapper (no global install needed) |
+| Hosting | Render (`render.yaml` Blueprint for API + Postgres) + Vercel (`vercel.json` Services for frontends) |
 | CI | GitHub Actions (`.github/workflows/ci.yml`) |
 | Tests | JUnit 5, MockMvc, H2 (Testcontainers when we hit Postgres-only SQL) |
-| Coverage | JaCoCo — line ≥ 80%, branch ≥ 55% enforced in `verify`; history & badge via Codecov (as of Aug 2026: 91% / 74%) |
+| Coverage | JaCoCo — line ≥ 80%, branch ≥ 55% enforced in `verify`; history & badge via Codecov |
 
 ## Quickstart
 
@@ -87,7 +89,8 @@ from env vars (`DB_URL`, `DB_USERNAME`, `DB_PASSWORD`).
 ```
 src/main/java/com/meethybridhub/
 ├── MeethybridHubApplication.java   # entry point
-├── config/                         # Security, OpenAPI, JPA auditing, scheduling
+├── config/                         # Security, OpenAPI, JPA auditing, scheduling,
+│                                   # Redis + fallback cache, async events, secrets validator
 ├── common/api/                     # ApiError, GlobalExceptionHandler
 ├── common/exception/               # domain exceptions (400, 401, 403, 404, 429)
 ├── api/ping/                       # smoke-test endpoint
@@ -95,13 +98,26 @@ src/main/java/com/meethybridhub/
 │                                   # password reset, RBAC, rate limiting,
 │                                   # security audit trail (audit_log),
 │                                   # server-side logout (revoked_tokens)
-└── store/                          # multi-tenancy: stores, domains,
-                                    # StoreFilter, TenantContext, TenantEntity,
-                                    # admin store management, branding/settings
+├── store/                          # multi-tenancy: stores, domains,
+│                                   # StoreFilter, TenantContext, TenantEntity,
+│                                   # admin store management, branding/settings
+├── catalog/                        # categories, products, variants, inventory,
+│                                   # public store catalog endpoints
+├── orders/                         # orders, order items, hybrid guest/account checkout
+├── payments/                       # payments, HMAC webhooks, installment plans & schedules
+├── customorders/                   # bespoke requests, quotes, messages, attachments,
+│                                   # quote-to-order conversion
+├── discovery/                      # store & product reviews, favorites, featured content,
+│                                   # store search
+├── admin/                          # platform & store analytics, commissions, disputes,
+│                                   # platform configuration, sales snapshots
+└── billing/                        # dormant flat-fee platform charge module
 src/main/resources/
 ├── application.yml                 # main config (env-var driven)
 ├── application-test.yml            # H2 test profile
-└── db/migration/                   # Flyway migrations (V2–V10)
+└── db/migration/                   # Flyway migrations (V2–V18)
+storefront/                         # Next.js 15 multi-store customer storefront (/)
+dashboard/                          # Next.js 15 store-owner & admin dashboard (/dashboard)
 src/test/java/com/meethybridhub/
 └── (integration + unit tests, H2-backed)
 ```
@@ -125,10 +141,11 @@ Every request passes through two custom servlet filters (wired in
 2. **`StoreFilter`** — resolves the tenant (store) for the request and stores it
    in `TenantContext` (a `ThreadLocal`, safe under virtual threads), clearing it
    afterwards. Resolution order (first match wins):
-   1. `X-Store-Id` header — explicit tenant for API clients
-   2. **Subdomain** from the `Host` header, e.g.
-      `divine-signature.meethybridhub.com` → slug `divine-signature`
-   3. `storeId` JWT claim — the store the token was issued for
+   1. `X-Store-Id` header — explicit numeric tenant ID for API clients
+   2. `X-Store-Slug` header — explicit store slug (sent automatically by `storefront/` and `dashboard/` based on the active hostname)
+   3. **Subdomain** from the `Host` header, e.g.
+      `divinez-signature.meethybridhub.com` → slug `divinez-signature`
+   4. `storeId` JWT claim — the store the token was issued for
 
 > **Security note:** resolution is not authorization. `X-Store-Id` is
 > client-controlled; the ownership check in `StoreService.getCurrentTenantStore`
@@ -198,6 +215,43 @@ Base path: `/api/v1` · Interactive docs at `/swagger-ui.html` (JWT bearer auth)
 | POST | `/stores/me/domains` | Register a domain | Owner/`ADMIN` |
 | GET | `/stores/me/settings` | Store branding/settings | Owner/`ADMIN` |
 | PUT | `/stores/me/settings` | Update branding (logo, colors, theme) | Owner/`ADMIN` |
+| GET | `/stores/me/analytics` | Store analytics & sales metrics | Owner/`ADMIN` |
+| GET | `/public/stores/{slug}` | Public store profile by slug | Public |
+| GET | `/public/stores/{slug}/categories` | Public store categories | Public |
+| GET | `/public/stores/{slug}/products` | Public store products (paginated/filtered) | Public |
+| GET | `/public/stores/{slug}/products/{productId}` | Public product detail | Public |
+| POST / GET | `/categories` | Create / list store categories | Owner/`ADMIN` / Public |
+| PUT / DELETE | `/categories/{categoryId}` | Update / delete category | Owner/`ADMIN` |
+| POST / GET | `/products` | Create / list store products | Owner/`ADMIN` / Public |
+| GET | `/products/search` | Search products in active store | Public |
+| GET / PUT / DELETE | `/products/{productId}` | Get / update / delete product | Public / Owner/`ADMIN` |
+| POST / GET | `/products/{productId}/variants` | Create / list product variants | Owner/`ADMIN` / Public |
+| GET / PUT | `/variants/{variantId}/inventory` | Get / update variant stock | Owner/`ADMIN` |
+| POST / GET | `/orders` | Create order (guest or authenticated) / list orders | Public / Authenticated |
+| GET | `/orders/{orderId}` | Order detail | Authenticated |
+| PUT | `/orders/{orderId}/cancel` | Cancel order | Authenticated |
+| PUT | `/orders/{orderId}/status` | Update order status | Owner/`ADMIN` |
+| POST | `/orders/{orderId}/payments` | Initiate payment for an order | Public / Authenticated |
+| GET | `/payments/{paymentId}` | Get payment status | Authenticated |
+| POST | `/payments/webhook` | Payment provider webhook (HMAC-SHA256) | Public (signed) |
+| POST | `/orders/{orderId}/installments` | Create installment plan (account required) | Authenticated |
+| GET | `/installments/{planId}` | Get installment plan & schedule | Authenticated |
+| POST / GET | `/custom-orders` | Submit / list custom order requests | Authenticated |
+| GET / PUT | `/custom-orders/{id}`, `/custom-orders/{id}/status` | Custom order detail / update status | Authenticated / Owner |
+| POST / GET | `/custom-orders/{requestId}/quotes` | Create / list quotes for custom request | Owner / Authenticated |
+| POST | `/custom-orders/quotes/{quoteId}/accept` (or `/reject`) | Accept or reject quote | Authenticated |
+| POST / GET | `/custom-orders/{requestId}/messages` | Custom order conversation messages | Authenticated |
+| POST / GET | `/custom-orders/{requestId}/attachments` | Custom order attachments | Authenticated |
+| POST | `/custom-orders/{requestId}/convert` | Convert accepted quote into an order | Authenticated |
+| POST / GET | `/discovery/stores/{storeId}/reviews` | Submit / list store reviews (+ `/summary`) | Authenticated / Public |
+| POST / GET | `/discovery/products/{productId}/reviews` | Submit / list product reviews | Authenticated / Public |
+| POST / GET / DELETE | `/discovery/favorites` | Manage saved favorite stores/products | Authenticated |
+| GET | `/discovery/featured` (`/stores`, `/products`, `/banners`) | Featured discovery content | Public |
+| GET | `/discovery/search/stores` | Search active stores | Public |
+| GET / PUT | `/admin/config`, `/admin/config/{key}` | Platform configuration | `ADMIN` |
+| POST / GET / PUT | `/admin/commissions/rules`, `/entries`, `/summary` | Commission rules & ledger | `ADMIN` |
+| POST / GET / PUT | `/admin/disputes`, `/admin/disputes/{id}/status`, `/messages` | Dispute resolution & messaging | Authenticated / `ADMIN` |
+| GET | `/admin/analytics/platform`, `/admin/analytics/stores/{storeId}` | Platform & per-store analytics | `ADMIN` |
 
 > **New endpoints are public by default** unless they match a URL rule in
 > `SecurityConfig` or carry `@PreAuthorize` — add one of the two when introducing
@@ -217,8 +271,17 @@ the app refuses to start if entities drift from the DB.
 | `V5__login_attempts_ip_to_varchar.sql` | IP column type alignment |
 | `V6__login_attempts_add_purpose.sql` | Purpose column (login vs. email-send counters) |
 | `V7__audit_log_ip_to_varchar.sql` | IP column type alignment (`audit_log`) |
+| `V8__platform_charges.sql` | `platform_charges` — dormant flat-fee platform charge ledger |
 | `V9__store_settings.sql` | `store_settings` — branding (logo, colors, theme, tagline) |
 | `V10__revoked_tokens.sql` | `revoked_tokens` — server-side logout denylist |
+| `V11__catalog.sql` | `categories`, `products` |
+| `V12__product_variants_inventory.sql` | `product_variants`, `inventory` |
+| `V13__orders.sql` | `orders`, `order_items` (hybrid guest + account checkout) |
+| `V14__payments.sql` | `payments` (idempotency keys, webhook verification) |
+| `V15__installments.sql` | `installment_plans`, `installment_payments` |
+| `V16__custom_orders.sql` | `custom_order_requests`, `quotes`, `custom_order_conversations`, `custom_order_attachments` |
+| `V17__discovery.sql` | `store_reviews`, `product_reviews`, `user_favorites`, `featured_content`, `recommendation_scores` |
+| `V18__admin_analytics.sql` | `platform_config`, `commission_rules`, `commission_entries`, `disputes`, `dispute_messages`, `sales_snapshots` |
 
 ## Locked decisions (so far)
 
@@ -285,11 +348,15 @@ Spring Boot API from the browser. The API itself (with PostgreSQL and Redis)
 does not run on Vercel; host it separately, then set:
 
 - In Vercel, for both services: `NEXT_PUBLIC_API_URL` = the API's public URL
-  (it is inlined at build time, so redeploy after changing it). The storefront
-  also reads `NEXT_PUBLIC_STORE_SLUG` and `NEXT_PUBLIC_PAYMENTS_ENABLED`, and the
-  dashboard `NEXT_PUBLIC_STORE_SLUG`.
-- On the API: `CORS_ALLOWED_ORIGINS` = the Vercel domain (e.g.
-  `https://meethybridhub.vercel.app`). Both apps share that one origin.
+  (it is inlined at build time, so redeploy after changing it). Both `storefront`
+  and `dashboard` automatically detect the active store (`meethybridhub` vs
+  `divinez-signature`) from the request hostname, falling back to
+  `NEXT_PUBLIC_STORE_SLUG`.
+- To give each store owner their own URL on a single Vercel project, assign two
+  domains under **Vercel → Project Settings → Domains** (e.g.
+  `meethybridhub.vercel.app` and `divinez-signature.vercel.app`).
+- On the API: `CORS_ALLOWED_ORIGINS` = comma-separated Vercel domains (e.g.
+  `https://meethybridhub.vercel.app,https://divinez-signature.vercel.app`).
 
 Run `vercel dev` from the repository root to serve both services together
 locally. Running the dashboard on its own (`npm run dev` in `dashboard/`)
@@ -305,14 +372,15 @@ pull request. The badge above reflects the latest run on `main`.
 | Checkout + JDK 21 (Temurin) | Uses the committed Maven Wrapper (`./mvnw`) — same Maven version everywhere |
 | `./mvnw -B verify` | Compiles, runs all tests (H2-backed, no DB needed), packages the jar, and enforces the JaCoCo coverage floor |
 | Upload test reports | Archives `target/surefire-reports/` as a downloadable artifact (7 days) |
-| Publish test results | `dorny/test-reporter` posts a **Maven Tests** check run with per-line annotations on the PR — also on failure || Upload coverage report | Archives the JaCoCo HTML/XML report (`target/site/jacoco/`) as an artifact (7 days) |
+| Publish test results | `dorny/test-reporter` posts a **Maven Tests** check run with per-line annotations on the PR — also on failure |
+| Upload coverage report | Archives the JaCoCo HTML/XML report (`target/site/jacoco/`) as an artifact (7 days) |
 | Upload to Codecov | `codecov-action` uploads `jacoco.xml` → coverage history, README badge, PR comments (status checks in `codecov.yml`) |
 
 - **One run per ref** — a new push cancels the stale in-progress run.
-- These are the same tests you run locally: `./mvnw test` (148 tests, H2 in-memory).
+- These are the same tests you run locally: `./mvnw test` (H2 in-memory).
 - **Coverage floor**: `./mvnw verify` fails if line coverage drops below 80% or branch below
-  55% (thresholds in `pom.xml`; as of Aug 2026 the suite measures 91.2% line / 74.1% branch). View
-  the full report locally by opening `target/site/jacoco/index.html` after a `verify`.
+  55% (thresholds in `pom.xml`). View the full report locally by opening
+  `target/site/jacoco/index.html` after a `verify`.
 - **Codecov** ([codecov.io/gh/Meet-hybrid/meethybridhub](https://codecov.io/gh/Meet-hybrid/meethybridhub))
   tracks coverage over time and posts a comment on PRs. Tokenless upload works for public
   repos; if the repo is private, add a `CODECOV_TOKEN` repo secret first.
@@ -320,13 +388,13 @@ pull request. The badge above reflects the latest run on `main`.
 
 ## Roadmap
 
-1. Foundations ✅
-2. Identity — JWT auth, users, roles, email verification, rate limiting ✅
-3. Tenancy + stores — store registration, subdomain resolution, admin management, branding/settings ✅
-4. Catalog — categories, products, inventory, reviews
-5. Orders + payments — Korapay, webhooks, idempotency, **installments**
-6. Custom orders — request → quote → order workflow
-7. Discovery — featured/recommended stores
-8. Admin + analytics — user & store management ✅; reports, commissions, disputes
-9. Hardening — Redis caching, queues, observability
-10. Deploy — Docker, Flyway migrations, backups
+1. Foundations — Spring Boot 3.5, Java 21, Flyway, OpenAPI, global error handling, CI/CD ✅
+2. Identity — JWT auth, users, roles, email verification, rate limiting, server-side logout, audit log ✅
+3. Tenancy + stores — store registration, `X-Store-Id` / `X-Store-Slug` / subdomain resolution, admin management, branding/settings ✅
+4. Catalog — categories, products, variants, inventory, public store catalog API ✅
+5. Orders + payments — hybrid guest/account checkout, payments, HMAC webhooks, idempotency, **installment plans** ✅ *(live Korapay credentials pending)*
+6. Custom orders — request → quote → conversation/attachments → order conversion workflow ✅
+7. Discovery — store & product reviews, favorites, featured stores/products/banners, store search ✅
+8. Admin + analytics — user & store management, store & platform analytics, commissions, disputes, platform config ✅
+9. Hardening — Redis caching with automatic in-memory fallback, async domain events, production startup secrets validator ✅
+10. Deploy & Frontends — Multi-store Next.js 15 `storefront/` & `dashboard/`, Docker, Render Blueprint (`render.yaml`), Vercel Services (`vercel.json`) ✅
